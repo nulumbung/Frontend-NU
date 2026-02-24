@@ -39,9 +39,17 @@ const AUTH_TOKEN_KEY = 'auth_token';
 const USER_SESSION_KEY = 'user_session';
 const DEVICE_FINGERPRINT_KEY = 'device_fingerprint';
 
+// Get API base URL from environment variable, fallback to /api for local dev
+const getApiBaseUrl = () => {
+  if (typeof window === 'undefined') {
+    return '/api'; // SSR fallback
+  }
+  return process.env.NEXT_PUBLIC_API_URL || '/api';
+};
+
 // Axios instance with base URL
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Accept': 'application/json',
   },

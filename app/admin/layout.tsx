@@ -29,6 +29,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Ensure component is mounted before rendering auth-dependent content
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Auth Guard
   useEffect(() => {
@@ -54,6 +60,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   
   if (pathname === '/admin/login') {
       return <>{children}</>;
+  }
+
+  // Prevent hydration mismatch by not rendering auth-dependent content until mounted
+  if (!isMounted) {
+    return null;
   }
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-100">Loading...</div>;

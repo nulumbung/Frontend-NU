@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/footer";
 import { AuthProvider } from "@/components/auth/auth-context";
 import { SiteSettingsProvider } from "@/components/settings/site-settings-context";
 import { SiteMetaSync } from "@/components/settings/site-meta-sync";
+import { SEOScripts } from "@/components/seo/seo-scripts";
 import { usePathname } from 'next/navigation';
 
 const playfair = Playfair_Display({
@@ -40,6 +41,9 @@ export default function RootLayout({
 
   return (
     <html lang="id">
+      <head>
+        <SEOScripts />
+      </head>
       <body
         className={`${playfair.variable} ${spaceGrotesk.variable} ${amiri.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground font-sans min-h-screen flex flex-col`}
       >

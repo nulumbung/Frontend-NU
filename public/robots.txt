@@ -1,0 +1,40 @@
+# Robots configuration for NU Lumbung Portal
+# Last updated: 2026-02-25
+
+# Allow all bots
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /.next
+Disallow: /api
+Disallow: /_next
+Disallow: /private
+
+# Specific rules for search engines
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /api
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /api
+
+User-agent: Slurp
+Allow: /
+Disallow: /admin
+
+# Crawl delay settings
+User-agent: *
+Crawl-delay: 0
+
+# Sitemap location
+Sitemap: https://nulumbung.or.id/sitemap.xml
+Sitemap: https://nulumbung.id/sitemap.xml
+
+# Comment sections to avoid crawling duplicate content
+User-agent: *
+Disallow: /*?*
+Allow: /
+Allow: /?
