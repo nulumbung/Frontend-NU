@@ -46,7 +46,6 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    // Only rewrite API calls in local development
     if (process.env.NODE_ENV === 'development') {
       return [
         {
@@ -55,8 +54,14 @@ const nextConfig: NextConfig = {
         },
       ];
     }
-    // In production, no rewrites - use NEXT_PUBLIC_API_URL directly in axios
-    return [];
+    // In production, rewrite /api to the actual backend domain
+    // This handles cases where NEXT_PUBLIC_API_URL is not properly set
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://api.nulumbung.or.id/api/:path*',
+      },
+    ];
   },
 };
 
