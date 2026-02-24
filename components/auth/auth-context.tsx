@@ -39,12 +39,24 @@ const AUTH_TOKEN_KEY = 'auth_token';
 const USER_SESSION_KEY = 'user_session';
 const DEVICE_FINGERPRINT_KEY = 'device_fingerprint';
 
-// Get API base URL from environment variable, fallback to /api for local dev
+// Get API base URL from environment variable
+// In production: NEXT_PUBLIC_API_URL should be set to https://api.nulumbung.or.id/api
+// In development: falls back to http://localhost:8000/api
 const getApiBaseUrl = () => {
-  if (typeof window === 'undefined') {
-    return '/api'; // SSR fallback
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  // If explicitly set to an absolute URL, use it
+  if (envUrl && envUrl.startsWith('http')) {
+    return envUrl;
   }
-  return process.env.NEXT_PUBLIC_API_URL || '/api';
+  
+  // Local development fallback
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:8000/api';
+  }
+  
+  // SSR or other cases
+  return envUrl || '/api';
 };
 
 // Axios instance with base URL

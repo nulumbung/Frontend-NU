@@ -55,13 +55,8 @@ const nextConfig: NextConfig = {
         },
       ];
     }
-    // In production, direct to real domain via environment variable
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/:path*`,
-      },
-    ];
+    // In production, no rewrites - use NEXT_PUBLIC_API_URL directly in axios
+    return [];
   },
 };
 
