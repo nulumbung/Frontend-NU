@@ -4,10 +4,11 @@
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Play, Calendar, User, Eye, Heart, Share2, ArrowLeft, Tag, Image as ImageIcon } from 'lucide-react';
+import { Play, Calendar, User, Eye, Heart, ArrowLeft, Tag, Image as ImageIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { api } from '@/components/auth/auth-context';
 import { CommentSection } from '@/components/comments/comment-section';
+import { ShareButtons } from '@/components/share-buttons';
 
 interface MultimediaItem {
   id: number;
@@ -47,8 +48,8 @@ export default function MultimediaDetailPage() {
         const allResponse = await api.get('/multimedia');
         const allItems = toArray<MultimediaItem>(allResponse.data);
         const related = allItems
-            .filter((i: MultimediaItem) => i.type === data.type && i.id !== data.id)
-            .slice(0, 3);
+          .filter((i: MultimediaItem) => i.type === data.type && i.id !== data.id)
+          .slice(0, 3);
         setRelatedItems(related);
 
       } catch (error) {
@@ -61,13 +62,13 @@ export default function MultimediaDetailPage() {
     };
 
     if (slug) {
-        fetchItem();
+      fetchItem();
     }
   }, [slug]);
 
   // If not found, show 404 style
   if (isLoading) {
-      return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
   if (!item) {
@@ -93,7 +94,7 @@ export default function MultimediaDetailPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      
+
       {/* Breadcrumb / Back Navigation */}
       <div className="bg-card border-b border-border sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
         <div className="container mx-auto px-4 py-4 flex items-center gap-2 text-sm text-muted-foreground">
@@ -107,10 +108,10 @@ export default function MultimediaDetailPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          
+
           {/* Main Content (Left Column) */}
           <div className="lg:col-span-8">
-            
+
             {/* Media Player / Viewer */}
             <div className="bg-black rounded-2xl overflow-hidden shadow-2xl mb-8 border border-white/10">
               {item.type === 'video' && videoId ? (
@@ -140,7 +141,7 @@ export default function MultimediaDetailPage() {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Gallery Thumbnails if Photo Type */}
                   {item.type === 'photo' && toArray<string>(item.gallery).length > 0 && (
                     <div className="flex gap-2 p-4 overflow-x-auto bg-black/80 backdrop-blur-sm scrollbar-thin scrollbar-thumb-white/20">
@@ -148,9 +149,8 @@ export default function MultimediaDetailPage() {
                         <button
                           key={idx}
                           onClick={() => setActivePhoto(photo)}
-                          className={`relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
-                            activePhoto === photo ? 'border-accent scale-105' : 'border-transparent opacity-60 hover:opacity-100'
-                          }`}
+                          className={`relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${activePhoto === photo ? 'border-accent scale-105' : 'border-transparent opacity-60 hover:opacity-100'
+                            }`}
                         >
                           <Image
                             src={photo}
@@ -171,8 +171,8 @@ export default function MultimediaDetailPage() {
             <div className="mb-8">
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
                 <span className="bg-accent/10 text-accent px-3 py-1 rounded-full font-bold uppercase text-xs tracking-wider flex items-center gap-2">
-                   {item.type === 'video' ? <Play className="w-3 h-3" /> : <ImageIcon className="w-3 h-3" />}
-                   {item.type}
+                  {item.type === 'video' ? <Play className="w-3 h-3" /> : <ImageIcon className="w-3 h-3" />}
+                  {item.type}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4" /> {new Date(item.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -202,11 +202,9 @@ export default function MultimediaDetailPage() {
                     <span className="text-xs">Suka</span>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
-                  <button className="flex items-center gap-2 bg-accent text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-accent/90 transition-colors">
-                    <Share2 className="w-4 h-4" /> Bagikan
-                  </button>
+                  <ShareButtons title={item.title} variant="compact" />
                 </div>
               </div>
 
@@ -218,11 +216,11 @@ export default function MultimediaDetailPage() {
               {/* Tags */}
               {toArray<string>(item.tags).length > 0 && (
                 <div className="mt-8 flex flex-wrap gap-2">
-                    {toArray<string>(item.tags).map((tag) => (
+                  {toArray<string>(item.tags).map((tag) => (
                     <span key={tag} className="flex items-center gap-1 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors cursor-pointer">
-                        <Tag className="w-3 h-3" /> {tag}
+                      <Tag className="w-3 h-3" /> {tag}
                     </span>
-                    ))}
+                  ))}
                 </div>
               )}
             </div>
@@ -244,7 +242,7 @@ export default function MultimediaDetailPage() {
           <div className="lg:col-span-4">
             <div className="sticky top-24">
               <h3 className="font-serif font-bold text-xl mb-6 flex items-center gap-2">
-                <span className="w-1 h-6 bg-accent rounded-full"/> Multimedia Terkait
+                <span className="w-1 h-6 bg-accent rounded-full" /> Multimedia Terkait
               </h3>
 
               <div className="flex flex-col gap-6">
@@ -279,9 +277,9 @@ export default function MultimediaDetailPage() {
                     </div>
                   </Link>
                 ))}
-                
+
                 {relatedItems.length === 0 && (
-                   <p className="text-muted-foreground text-sm italic">Tidak ada konten terkait saat ini.</p>
+                  <p className="text-muted-foreground text-sm italic">Tidak ada konten terkait saat ini.</p>
                 )}
               </div>
 

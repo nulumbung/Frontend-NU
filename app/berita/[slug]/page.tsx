@@ -4,11 +4,12 @@
 import { use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Calendar, Clock, Eye, Share2, Facebook, Twitter, Link as LinkIcon } from 'lucide-react';
+import { Calendar, Clock, Eye } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/components/auth/auth-context';
 import { CommentSection } from '@/components/comments/comment-section';
 import { AdSlot, AdvertisementItem } from '@/components/ads/ad-slot';
+import { ShareButtons } from '@/components/share-buttons';
 
 interface PostDetail {
   id: number;
@@ -21,13 +22,13 @@ interface PostDetail {
   image_credit?: string | null;
   tags: string[];
   category: {
-      id: number;
-      name: string;
-      slug: string;
+    id: number;
+    name: string;
+    slug: string;
   } | null;
   author?: {
-      name?: string | null;
-      avatar?: string | null;
+    name?: string | null;
+    avatar?: string | null;
   } | null;
   created_at: string;
   read_time?: string | null;
@@ -259,16 +260,16 @@ export default function BeritaDetail({ params }: { params: Promise<{ slug: strin
   const formattedContent = useMemo(() => formatInlineImageMeta(news?.content || ''), [news?.content]);
 
   if (isLoading) {
-      return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
   if (!news) {
-      return <div className="min-h-screen flex items-center justify-center">Berita tidak ditemukan.</div>;
+    return <div className="min-h-screen flex items-center justify-center">Berita tidak ditemukan.</div>;
   }
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      
+
       {/* Breadcrumb */}
       <div className="container mx-auto px-4 py-4 text-sm text-muted-foreground flex items-center gap-2 overflow-x-auto whitespace-nowrap">
         <Link href="/" className="hover:text-accent">Beranda</Link>
@@ -286,10 +287,10 @@ export default function BeritaDetail({ params }: { params: Promise<{ slug: strin
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          
+
           {/* Main Content (8 cols) */}
           <article className="lg:col-span-8">
-            
+
             {/* Hero Article */}
             <div className="mb-8">
               <div className="mb-6">
@@ -357,31 +358,15 @@ export default function BeritaDetail({ params }: { params: Promise<{ slug: strin
 
             {/* Image Caption & Credit */}
             {(news.image_caption || news.image_credit) && (
-                <div className="text-xs text-muted-foreground italic text-center mt-2 mb-8">
-                    {news.image_caption && <span>{news.image_caption}</span>}
-                    {news.image_caption && news.image_credit && <span> | </span>}
-                    {news.image_credit && <span>Foto: {news.image_credit}</span>}
-                </div>
+              <div className="text-xs text-muted-foreground italic text-center mt-2 mb-8">
+                {news.image_caption && <span>{news.image_caption}</span>}
+                {news.image_caption && news.image_credit && <span> | </span>}
+                {news.image_credit && <span>Foto: {news.image_credit}</span>}
+              </div>
             )}
 
             {/* Share Buttons */}
-            <div className="flex items-center justify-between border-y border-border py-4 mb-8">
-              <span className="font-bold text-muted-foreground text-sm uppercase tracking-widest">Bagikan:</span>
-              <div className="flex gap-4">
-                <button className="p-2 rounded-full bg-blue-600/10 text-blue-500 hover:bg-blue-600 hover:text-white transition-colors">
-                  <Facebook className="w-5 h-5" />
-                </button>
-                <button className="p-2 rounded-full bg-sky-500/10 text-sky-400 hover:bg-sky-500 hover:text-white transition-colors">
-                  <Twitter className="w-5 h-5" />
-                </button>
-                <button className="p-2 rounded-full bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white transition-colors">
-                  <Share2 className="w-5 h-5" />
-                </button>
-                <button className="p-2 rounded-full bg-gray-500/10 text-gray-400 hover:bg-gray-500 hover:text-white transition-colors">
-                  <LinkIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+            <ShareButtons title={news.title} variant="inline" />
 
             {adsByPlacement.post_detail_inline[0] && (
               <div className="mb-8">
@@ -392,42 +377,42 @@ export default function BeritaDetail({ params }: { params: Promise<{ slug: strin
             {/* Article Content */}
             <div className="prose prose-lg max-w-none font-serif text-foreground leading-relaxed [&_img]:w-full [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-6 [&_figure.article-inline-image]:my-8 [&_figure.article-inline-image]:mx-0 [&_figure.article-inline-image>img]:my-0 [&_figure.article-inline-image>img]:rounded-xl [&_figure.article-inline-image>figcaption]:mt-2 [&_figure.article-inline-image>figcaption]:text-center [&_figure.article-inline-image>figcaption]:text-xs [&_figure.article-inline-image>figcaption]:italic [&_figure.article-inline-image>figcaption]:text-muted-foreground">
               {news.excerpt && (
-                  <p className="font-bold text-lg text-foreground mb-6">
-                    {news.excerpt}
-                  </p>
+                <p className="font-bold text-lg text-foreground mb-6">
+                  {news.excerpt}
+                </p>
               )}
-              
+
               <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
             </div>
 
             {/* Tags */}
             {news.tags && news.tags.length > 0 && (
-                <div className="mt-12 pt-8 border-t border-border">
+              <div className="mt-12 pt-8 border-t border-border">
                 <div className="flex flex-wrap gap-2">
-                    <span className="text-sm font-bold text-muted-foreground mr-2 py-1">Tags:</span>
-                    {news.tags.map((tag) => (
-                    <Link 
-                        key={tag} 
-                        href={`/tag/${tag.toLowerCase()}`}
-                        className="px-4 py-1 rounded-full bg-card border border-border text-sm hover:border-accent hover:text-accent transition-colors"
+                  <span className="text-sm font-bold text-muted-foreground mr-2 py-1">Tags:</span>
+                  {news.tags.map((tag) => (
+                    <Link
+                      key={tag}
+                      href={`/tag/${tag.toLowerCase()}`}
+                      className="px-4 py-1 rounded-full bg-card border border-border text-sm hover:border-accent hover:text-accent transition-colors"
                     >
-                        #{tag}
+                      #{tag}
                     </Link>
-                    ))}
+                  ))}
                 </div>
-                </div>
+              </div>
             )}
 
             {/* Author Box */}
             <div className="mt-12 p-8 rounded-2xl bg-card border border-border flex items-center gap-6">
               <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-accent flex-shrink-0">
                 {news.author?.avatar ? (
-                  <Image 
-                    src={news.author.avatar} 
-                    alt={authorName} 
-                    fill 
-                    className="object-cover" 
-                    unoptimized 
+                  <Image
+                    src={news.author.avatar}
+                    alt={authorName}
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-secondary/40 text-foreground text-2xl font-bold">
@@ -509,11 +494,11 @@ export default function BeritaDetail({ params }: { params: Promise<{ slug: strin
                   <Link key={item.id} href={`/berita/${item.slug}`} className="flex gap-4 group items-start">
                     <div className="relative w-20 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-secondary/20">
                       {item.image ? (
-                        <Image 
-                          src={item.image} 
-                          alt={item.title} 
-                          fill 
-                          className="object-cover transition-transform duration-500 group-hover:scale-110" 
+                        <Image
+                          src={item.image}
+                          alt={item.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
                           unoptimized
                         />
                       ) : (
@@ -534,7 +519,7 @@ export default function BeritaDetail({ params }: { params: Promise<{ slug: strin
                   <p className="text-sm text-muted-foreground">Belum ada berita populer.</p>
                 )}
               </div>
-              
+
               {adsByPlacement.post_detail_sidebar.map((ad) => (
                 <div key={ad.id} className="mt-6">
                   <AdSlot ad={ad} />
