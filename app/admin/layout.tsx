@@ -24,7 +24,8 @@ import {
   Home,
   Megaphone,
   ChevronUp,
-  User as UserIcon
+  User as UserIcon,
+  HardDrive
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -94,6 +95,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: 'Newsletter', href: '/admin/newsletters', icon: Mail, roles: ['superadmin', 'admin'] },
     { label: 'Users', href: '/admin/users', icon: Users, roles: ['superadmin'] },
     { label: 'Roles & Permissions', href: '/admin/roles', icon: ShieldAlert, roles: ['superadmin'] },
+    { label: 'Backup & Restore', href: '/admin/backup', icon: HardDrive, roles: ['superadmin'] },
     { label: 'Settings', href: '/admin/settings', icon: Settings, roles: ['superadmin'] },
   ];
 
@@ -104,7 +106,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } lg:relative lg:translate-x-0`}
+          } lg:translate-x-0`}
       >
         <div className="h-full flex flex-col">
           <div className="p-6 border-b border-gray-200 flex items-center justify-between">
@@ -128,8 +130,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   href={item.href}
                   onClick={() => setIsSidebarOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
-                      ? 'bg-green-50 text-green-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-green-50 text-green-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                 >
                   <item.icon className="w-5 h-5" />
@@ -148,8 +150,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   href="/admin/profile"
                   onClick={() => { setIsProfileOpen(false); setIsSidebarOpen(false); }}
                   className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${pathname === '/admin/profile'
-                      ? 'bg-green-50 text-green-700'
-                      : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-green-50 text-green-700'
+                    : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   <UserIcon className="w-4 h-4" />
@@ -198,7 +200,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden lg:ml-64">
         {/* Mobile Header */}
         <header className="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between">
           <button onClick={() => setIsSidebarOpen(true)}>
