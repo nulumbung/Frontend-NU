@@ -13,19 +13,6 @@ const asTrimmed = (value?: string) => (value || '').trim();
 const isValidFaviconUrl = (value: string) =>
   /^https?:\/\//i.test(value) || value.startsWith('/') || value.startsWith('data:image/');
 
-const withCacheVersion = (href: string, version: string) => {
-  if (!version || href.startsWith('data:image/')) return href;
-  if (typeof window === 'undefined') return href;
-
-  try {
-    const url = new URL(href, window.location.origin);
-    url.searchParams.set('v', version);
-    return url.toString();
-  } catch {
-    return href;
-  }
-};
-
 const upsertMetaTag = (name: string, content: string) => {
   let tag = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
   if (!tag) {
@@ -36,45 +23,42 @@ const upsertMetaTag = (name: string, content: string) => {
   tag.setAttribute('content', content);
 };
 
-const detectIconMimeType = (href: string): string | null => {
-  const normalized = href.toLowerCase();
-  if (normalized.includes('.svg')) return 'image/svg+xml';
-  if (normalized.includes('.png')) return 'image/png';
-  if (normalized.includes('.jpg') || normalized.includes('.jpeg')) return 'image/jpeg';
-  if (normalized.includes('.webp')) return 'image/webp';
-  if (normalized.includes('.ico')) return 'image/x-icon';
-  return 'image/png'; // Default to PNG for uploaded images
-};
-
-const ICON_SIZES = ['16x16', '32x32', '48x48', '64x64', '96x96', '128x128', '180x180', '192x192', '256x256', '512x512'];
-
+/**
+ * Force-update all favicon link elements in the document head.
+ *
+ * Browsers aggressively cache favicons, so simply changing `href` on an existing
+ * `<link>` element often has no visible effect.  The most reliable cross-browser
+ * approach is to:
+ *   1. Remove every existing icon `<link>`.
+ *   2. Append brand-new `<link>` elements with a cache-busting query string.
+ */
 const syncIconLinks = (href: string) => {
-  const mimeType = detectIconMimeType(href);
+  // Append a unique timestamp to bust the browser cache
+  const bustUrl = href.includes('?')
+    ? `${href}&_t=${Date.now()}`
+    : `${href}?_t=${Date.now()}`;
 
-  // Remove ALL existing icon links first
-  const existingIconLinks = Array.from(document.querySelectorAll('link[rel*="icon"]')) as HTMLLinkElement[];
-  existingIconLinks.forEach((link) => link.remove());
+  // 1. Remove ALL existing icon links
+  document
+    .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]')
+    .forEach((el) => el.remove());
 
-  // Create fresh icon links with all sizes for high-res display
-  const createLink = (rel: string, size?: string) => {
+  // 2. Create new links
+  const createLink = (rel: string, sizes?: string) => {
     const link = document.createElement('link');
-    link.setAttribute('rel', rel);
-    link.setAttribute('href', href);
-    if (mimeType) link.setAttribute('type', mimeType);
-    if (size) link.setAttribute('sizes', size);
+    link.rel = rel;
+    link.href = bustUrl;
+    if (sizes) link.setAttribute('sizes', sizes);
     link.setAttribute(MANAGED_ATTR, 'true');
     document.head.appendChild(link);
   };
 
-  // Main icon (no size = browser picks best)
+  // Standard icon – no size constraint so the browser picks the best resolution
   createLink('icon');
-
-  // Sized icons for different contexts
-  ICON_SIZES.forEach((size) => {
-    createLink('icon', size);
-  });
-
-  // Apple touch icon (large)
+  // Explicit large sizes to encourage hi-res rendering
+  createLink('icon', '192x192');
+  createLink('icon', '512x512');
+  // Apple touch icon (required for iOS home screen)
   createLink('apple-touch-icon', '180x180');
 };
 
@@ -88,17 +72,15 @@ export function SiteMetaSync() {
     DEFAULT_DESCRIPTION;
   const siteKeywords = asTrimmed(settings.seo_meta_keywords);
 
+  // Derive the favicon href from settings.
+  // Uses the uploaded URL directly — no server-side proxy required.
   const faviconHref = useMemo(() => {
-    const cacheVersion = asTrimmed(settings.settings_version) || String(version);
     const configured = asTrimmed(settings.site_favicon);
-
-    // Use the configured favicon URL directly (no proxy needed)
-    if (isValidFaviconUrl(configured)) {
-      return withCacheVersion(configured, cacheVersion);
+    if (configured && isValidFaviconUrl(configured)) {
+      return configured;
     }
-
-    return withCacheVersion(DEFAULT_FAVICON, cacheVersion);
-  }, [settings.settings_version, settings.site_favicon, version]);
+    return DEFAULT_FAVICON;
+  }, [settings.site_favicon]);
 
   useEffect(() => {
     document.title = siteTitle;
@@ -107,7 +89,7 @@ export function SiteMetaSync() {
       upsertMetaTag('keywords', siteKeywords);
     }
     syncIconLinks(faviconHref);
-  }, [faviconHref, siteDescription, siteKeywords, siteTitle]);
+  }, [faviconHref, siteDescription, siteKeywords, siteTitle, version]);
 
   return null;
 }
