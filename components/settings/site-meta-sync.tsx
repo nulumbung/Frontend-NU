@@ -7,7 +7,6 @@ const DEFAULT_TITLE = 'NU LUMBUNG';
 const DEFAULT_DESCRIPTION = 'Portal Berita dan Informasi Nahdlatul Ulama';
 const DEFAULT_FAVICON = '/favicon.ico';
 const MANAGED_ATTR = 'data-site-settings-managed';
-const REQUIRED_ICON_RELS = ['icon', 'shortcut icon', 'apple-touch-icon'] as const;
 
 const asTrimmed = (value?: string) => (value || '').trim();
 
@@ -44,41 +43,39 @@ const detectIconMimeType = (href: string): string | null => {
   if (normalized.includes('.jpg') || normalized.includes('.jpeg')) return 'image/jpeg';
   if (normalized.includes('.webp')) return 'image/webp';
   if (normalized.includes('.ico')) return 'image/x-icon';
-  return null;
+  return 'image/png'; // Default to PNG for uploaded images
 };
+
+const ICON_SIZES = ['16x16', '32x32', '48x48', '64x64', '96x96', '128x128', '180x180', '192x192', '256x256', '512x512'];
 
 const syncIconLinks = (href: string) => {
   const mimeType = detectIconMimeType(href);
-  const existingIconLinks = Array.from(document.querySelectorAll('link[rel]')).filter((node) => {
-    const relValue = (node.getAttribute('rel') || '').toLowerCase().trim();
-    return relValue.includes('icon');
-  }) as HTMLLinkElement[];
 
-  existingIconLinks.forEach((link) => {
-    link.setAttribute('href', href);
-    if (mimeType) {
-      link.setAttribute('type', mimeType);
-    } else {
-      link.removeAttribute('type');
-    }
-    link.setAttribute(MANAGED_ATTR, 'true');
-  });
+  // Remove ALL existing icon links first
+  const existingIconLinks = Array.from(document.querySelectorAll('link[rel*="icon"]')) as HTMLLinkElement[];
+  existingIconLinks.forEach((link) => link.remove());
 
-  REQUIRED_ICON_RELS.forEach((rel) => {
-    const hasRel = existingIconLinks.some(
-      (link) => (link.getAttribute('rel') || '').toLowerCase().trim() === rel
-    );
-    if (hasRel) return;
-
+  // Create fresh icon links with all sizes for high-res display
+  const createLink = (rel: string, size?: string) => {
     const link = document.createElement('link');
     link.setAttribute('rel', rel);
     link.setAttribute('href', href);
-    if (mimeType) {
-      link.setAttribute('type', mimeType);
-    }
+    if (mimeType) link.setAttribute('type', mimeType);
+    if (size) link.setAttribute('sizes', size);
     link.setAttribute(MANAGED_ATTR, 'true');
     document.head.appendChild(link);
+  };
+
+  // Main icon (no size = browser picks best)
+  createLink('icon');
+
+  // Sized icons for different contexts
+  ICON_SIZES.forEach((size) => {
+    createLink('icon', size);
   });
+
+  // Apple touch icon (large)
+  createLink('apple-touch-icon', '180x180');
 };
 
 export function SiteMetaSync() {
@@ -92,12 +89,12 @@ export function SiteMetaSync() {
   const siteKeywords = asTrimmed(settings.seo_meta_keywords);
 
   const faviconHref = useMemo(() => {
-    // Prefer backend timestamp if available; fallback to local provider version.
     const cacheVersion = asTrimmed(settings.settings_version) || String(version);
     const configured = asTrimmed(settings.site_favicon);
 
+    // Use the configured favicon URL directly (no proxy needed)
     if (isValidFaviconUrl(configured)) {
-      return withCacheVersion('/api/site-favicon', cacheVersion);
+      return withCacheVersion(configured, cacheVersion);
     }
 
     return withCacheVersion(DEFAULT_FAVICON, cacheVersion);
