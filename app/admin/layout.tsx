@@ -3,25 +3,28 @@
 
 import { useAuth } from '@/components/auth/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  FileText, 
-  Calendar, 
-  Users, 
-  Video, 
-  LogOut, 
+import {
+  FileText,
+  Calendar,
+  Users,
+  Video,
+  LogOut,
   Menu,
   X,
   Settings,
   Shield,
+  ShieldAlert,
   Hash,
   History,
   Radio,
   Mail,
   Home,
-  Megaphone
+  Megaphone,
+  ChevronUp,
+  User as UserIcon
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -30,6 +33,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   // Ensure component is mounted before rendering auth-dependent content
   useEffect(() => {
@@ -38,31 +43,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Auth Guard
   useEffect(() => {
-    if (pathname === '/admin/login') return; // Skip check for login page
+    if (pathname === '/admin/login') return;
 
     if (!isLoading) {
       if (!user) {
-        // Redirect to dedicated admin login page
         router.push('/admin/login');
       } else if (!['superadmin', 'admin', 'editor', 'redaksi'].includes(user.role as string)) {
-        // Logged in but not admin
         router.push('/');
       }
     }
   }, [user, isLoading, router, pathname]);
 
-  // Don't protect the login page itself with this layout's logic if it's rendered inside it?
-  // Actually, Next.js Layouts wrap pages. If /admin/login is inside /admin, it will be wrapped by this layout.
-  // We need to exclude /admin/login from this check or move /admin/login outside of this layout group.
-  // BUT, usually /admin/login should NOT have the sidebar.
-  // So /admin/login should NOT be under app/admin/layout.tsx if this layout adds sidebar.
-  // OR we check pathname.
-  
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close dropdown on navigation
+  useEffect(() => {
+    setIsProfileOpen(false);
+  }, [pathname]);
+
   if (pathname === '/admin/login') {
-      return <>{children}</>;
+    return <>{children}</>;
   }
 
-  // Prevent hydration mismatch by not rendering auth-dependent content until mounted
   if (!isMounted) {
     return null;
   }
@@ -82,6 +93,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: 'Iklan', href: '/admin/ads', icon: Megaphone, roles: ['superadmin', 'admin', 'editor', 'redaksi'] },
     { label: 'Newsletter', href: '/admin/newsletters', icon: Mail, roles: ['superadmin', 'admin'] },
     { label: 'Users', href: '/admin/users', icon: Users, roles: ['superadmin'] },
+    { label: 'Roles & Permissions', href: '/admin/roles', icon: ShieldAlert, roles: ['superadmin'] },
     { label: 'Settings', href: '/admin/settings', icon: Settings, roles: ['superadmin'] },
   ];
 
@@ -90,10 +102,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
-      <aside 
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:relative lg:translate-x-0`}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:relative lg:translate-x-0`}
       >
         <div className="h-full flex flex-col">
           <div className="p-6 border-b border-gray-200 flex items-center justify-between">
@@ -110,16 +121,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Menu</p>
             </div>
             {filteredMenu.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive 
-                      ? 'bg-green-50 text-green-700' 
+                  onClick={() => setIsSidebarOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+                      ? 'bg-green-50 text-green-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   <item.icon className="w-5 h-5" />
                   {item.label}
@@ -128,26 +139,63 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             })}
           </nav>
 
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center gap-3 px-3 py-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold">
-                {user.name.charAt(0)}
+          {/* User Profile Section with Dropdown */}
+          <div className="relative border-t border-gray-200" ref={profileRef}>
+            {/* Dropdown Menu */}
+            {isProfileOpen && (
+              <div className="absolute bottom-full left-0 right-0 mx-3 mb-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50">
+                <Link
+                  href="/admin/profile"
+                  onClick={() => { setIsProfileOpen(false); setIsSidebarOpen(false); }}
+                  className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${pathname === '/admin/profile'
+                      ? 'bg-green-50 text-green-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                >
+                  <UserIcon className="w-4 h-4" />
+                  Profil Saya
+                </Link>
+                <div className="border-t border-gray-100" />
+                <button
+                  onClick={() => { setIsProfileOpen(false); logout(); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Keluar
+                </button>
               </div>
-              <div className="overflow-hidden">
+            )}
+
+            {/* User Info Button */}
+            <button
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="w-full flex items-center gap-3 px-4 py-4 hover:bg-gray-50 transition-colors text-left"
+            >
+              <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold flex-shrink-0 overflow-hidden">
+                {user.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  user.name.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="flex-1 overflow-hidden">
                 <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
                 <p className="text-xs text-gray-500 truncate capitalize">{user.role}</p>
               </div>
-            </div>
-            <button
-              onClick={logout}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              Keluar
+              <ChevronUp className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isProfileOpen ? '' : 'rotate-180'}`} />
             </button>
           </div>
         </div>
       </aside>
+
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
