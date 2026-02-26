@@ -8,6 +8,7 @@ import { AuthProvider } from "@/components/auth/auth-context";
 import { SiteSettingsProvider } from "@/components/settings/site-settings-context";
 import { SiteMetaSync } from "@/components/settings/site-meta-sync";
 import { SEOScripts } from "@/components/seo/seo-scripts";
+import { PWAInstaller } from "@/components/pwa/pwa-installer";
 import { usePathname } from 'next/navigation';
 
 const playfair = Playfair_Display({
@@ -63,6 +64,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <head>
+        {/* Search Engine Verification */}
         <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || ''} />
         {process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION && (
           <meta name="msvalidate.01" content={process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION} />
@@ -70,14 +72,29 @@ export default function RootLayout({
         {process.env.NEXT_PUBLIC_YANDEX_SITE_VERIFICATION && (
           <meta name="yandex-verification" content={process.env.NEXT_PUBLIC_YANDEX_SITE_VERIFICATION} />
         )}
+
+        {/* PWA Configuration */}
+        <meta name="theme-color" content="#16a34a" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="NU LUMBUNG" />
+        <meta name="application-name" content="NU LUMBUNG" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-        <link rel="apple-touch-icon" href="/favicon.ico" />
+        <link rel="icon" href="/logo-192x192.png" sizes="192x192" type="image/png" />
+        <link rel="icon" href="/logo-512x512.png" sizes="512x512" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo-192x192.png" />
+        <link rel="apple-touch-startup-image" href="/logo-512x512.png" />
+
         <SEOScripts />
       </head>
       <body
         className={`${playfair.variable} ${spaceGrotesk.variable} ${amiri.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground font-sans min-h-screen flex flex-col`}
       >
+        <PWAInstaller />
         <RootLayoutContent>{children}</RootLayoutContent>
       </body>
     </html>
