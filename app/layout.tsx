@@ -31,7 +31,7 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
-export default function RootLayout({
+function RootLayoutContent({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -40,8 +40,36 @@ export default function RootLayout({
   const isAdmin = pathname?.startsWith('/admin');
 
   return (
+    <>
+      <AuthProvider>
+        <SiteSettingsProvider>
+          <SiteMetaSync />
+          {!isAdmin && <Header />}
+          <main className={!isAdmin ? "flex-grow pt-[60px] md:pt-[72px]" : "flex-grow"}>
+            {children}
+          </main>
+          {!isAdmin && <Footer />}
+        </SiteSettingsProvider>
+      </AuthProvider>
+    </>
+  );
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
     <html lang="id">
       <head>
+        <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || ''} />
+        {process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION && (
+          <meta name="msvalidate.01" content={process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION} />
+        )}
+        {process.env.NEXT_PUBLIC_YANDEX_SITE_VERIFICATION && (
+          <meta name="yandex-verification" content={process.env.NEXT_PUBLIC_YANDEX_SITE_VERIFICATION} />
+        )}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
@@ -50,16 +78,7 @@ export default function RootLayout({
       <body
         className={`${playfair.variable} ${spaceGrotesk.variable} ${amiri.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground font-sans min-h-screen flex flex-col`}
       >
-        <AuthProvider>
-          <SiteSettingsProvider>
-            <SiteMetaSync />
-            {!isAdmin && <Header />}
-            <main className={!isAdmin ? "flex-grow pt-[60px] md:pt-[72px]" : "flex-grow"}>
-              {children}
-            </main>
-            {!isAdmin && <Footer />}
-          </SiteSettingsProvider>
-        </AuthProvider>
+        <RootLayoutContent>{children}</RootLayoutContent>
       </body>
     </html>
   );
