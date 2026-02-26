@@ -53,7 +53,10 @@ export function ImageInput({ label, value, onChange, className = '', placeholder
 
     try {
       const response = await api.post('/upload', formData);
-      onChange(response.data.url);
+      const uploadedUrl = response.data.url;
+      // Ensure URL uses HTTPS if on production
+      const secureUrl = uploadedUrl.replace(/^http:\/\//, 'https://');
+      onChange(secureUrl);
     } catch (error: unknown) {
       if (getStatusCode(error) !== 422) {
         console.error('Upload failed', error);

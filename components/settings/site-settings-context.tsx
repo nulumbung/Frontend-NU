@@ -102,12 +102,21 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     const handleSettingsUpdated = () => {
       fetchSettings(true);
     };
+
+    // Listen for favicon updates from admin panel
+    const handleFaviconUpdated = () => {
+      console.log('Favicon updated event received, refreshing settings...');
+      fetchSettings(true);
+    };
+
     window.addEventListener(SITE_SETTINGS_UPDATED_EVENT, handleSettingsUpdated);
+    window.addEventListener('favicon-updated', handleFaviconUpdated);
 
     return () => {
       isMountedRef.current = false;
       window.clearInterval(intervalId);
       window.removeEventListener(SITE_SETTINGS_UPDATED_EVENT, handleSettingsUpdated);
+      window.removeEventListener('favicon-updated', handleFaviconUpdated);
     };
   }, [fetchSettings]);
 

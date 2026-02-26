@@ -10,8 +10,10 @@ const MANAGED_ATTR = 'data-site-settings-managed';
 
 const asTrimmed = (value?: string) => (value || '').trim();
 
-const isValidFaviconUrl = (value: string) =>
-  /^https?:\/\//i.test(value) || value.startsWith('/') || value.startsWith('data:image/');
+const isValidFaviconUrl = (value: string) => {
+  const trimmed = (value || '').trim();
+  return /^https?:\/\//i.test(trimmed) || trimmed.startsWith('/') || trimmed.startsWith('data:image/');
+};
 
 const upsertMetaTag = (name: string, content: string) => {
   let tag = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
@@ -77,8 +79,15 @@ export function SiteMetaSync() {
   const faviconHref = useMemo(() => {
     const configured = asTrimmed(settings.site_favicon);
     if (configured && isValidFaviconUrl(configured)) {
-      return configured;
+      // Ensure HTTPS on production
+      let url = configured;
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        url = url.replace(/^http:\/\//, 'https://');
+      }
+      console.log('[Favicon] Using configured URL:', url);
+      return url;
     }
+    console.log('[Favicon] Using default fallback');
     return DEFAULT_FAVICON;
   }, [settings.site_favicon]);
 

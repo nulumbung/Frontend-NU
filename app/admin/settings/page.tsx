@@ -60,7 +60,17 @@ export default function SettingsPage() {
 
         await api.put('/settings', { settings: settingsToSave });
         await fetchSettings(true);
+        
+        // Dispatch event to refresh ALL site settings in the frontend
         window.dispatchEvent(new Event(SITE_SETTINGS_UPDATED_EVENT));
+        
+        // Also dispatch a custom event for immediate favicon refresh
+        window.dispatchEvent(new CustomEvent('favicon-updated', { 
+          detail: { 
+            timestamp: Date.now() 
+          } 
+        }));
+        
         toast.success('Pengaturan berhasil disimpan');
     } catch (error) {
         console.error('Failed to save settings', error);
