@@ -9,77 +9,26 @@
   "theme_color": "#16a34a",
   "background_color": "#ffffff",
   "categories": ["news", "information"],
-  "screenshots": [
-    {
-      "src": "/logo-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "/logo-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ],
   "icons": [
     {
       "src": "/favicon.ico",
       "sizes": "32x32",
       "type": "image/x-icon"
-    },
-    {
-      "src": "/logo-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/logo-192x192-maskable.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/logo-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/logo-512x512-maskable.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ],
+  "screenshots": [],
   "shortcuts": [
     {
       "name": "Berita Terbaru",
       "short_name": "Berita",
       "description": "Baca berita terbaru",
-      "url": "/berita?source=pwa",
-      "icons": [
-        {
-          "src": "/logo-192x192.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
+      "url": "/berita?source=pwa"
     },
     {
       "name": "Agenda",
       "short_name": "Agenda",
       "description": "Jadwal kegiatan",
-      "url": "/agenda?source=pwa",
-      "icons": [
-        {
-          "src": "/logo-192x192.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
+      "url": "/agenda?source=pwa"
     }
   ],
   "related_applications": [

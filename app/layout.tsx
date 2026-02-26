@@ -83,11 +83,8 @@ export default function RootLayout({
         <meta name="application-name" content="NU LUMBUNG" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/logo-192x192.png" sizes="192x192" type="image/png" />
-        <link rel="icon" href="/logo-512x512.png" sizes="512x512" type="image/png" />
-        <link rel="apple-touch-icon" href="/logo-192x192.png" />
-        <link rel="apple-touch-startup-image" href="/logo-512x512.png" />
+        <link rel="icon" href="/favicon.ico" sizes="any" type="image/x-icon" />
+        <link rel="apple-touch-icon" href="/favicon.ico" />
 
         <SEOScripts />
       </head>
