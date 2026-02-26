@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Download NU LUMBUNG - Portal berita dan informasi resmi Nahdlatul Ulama Lumbung">
+    <meta name="theme-color" content="#16a34a">
+    <meta property="og:title" content="NU LUMBUNG">
+    <meta property="og:description" content="Portal berita dan informasi resmi Nahdlatul Ulama Lumbung">
+    <meta property="og:image" content="https://nulumbung.or.id/logo.png">
+    <meta property="og:url" content="https://app.nulumbung.or.id">
+    <title>NU LUMBUNG - Download Aplikasi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            padding: 40px 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+            font-weight: bold;
+            color: #16a34a;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 40px 25px;
+            text-align: center;
+        }
+
+        .features {
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .feature-icon {
+            width: 24px;
+            height: 24px;
+            background: #16a34a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            margin-right: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .feature-text {
+            color: #374151;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .download-section {
+            margin-top: 32px;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
+        }
+
+        .play-icon {
+            margin-right: 8px;
+        }
+
+        .info-text {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #9CA3AF;
+        }
+
+        .requirements {
+            background: #F3F4F6;
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 24px;
+            font-size: 12px;
+            color: #6B7280;
+        }
+
+        .requirements strong {
+            color: #374151;
+        }
+
+        .footer {
+            background: #F9FAFB;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #9CA3AF;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .footer a {
+            color: #16a34a;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: currentColor;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+            margin: 0 2px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .container {
+                border-radius: 16px;
+            }
+
+            .header {
+                padding: 30px 15px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .logo {
+                width: 70px;
+                height: 70px;
+                font-size: 35px;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">📰</div>
+            <h1>NU LUMBUNG</h1>
+            <p>Portal Berita & Informasi Resmi</p>
+        </div>
+
+        <div class="content">
+            <h2 style="font-size: 20px; color: #1F2937; margin-bottom: 16px;">Unduh Aplikasi Sekarang</h2>
+            <p style="color: #6B7280; margin-bottom: 24px;">Akses berita terbaru, agenda, dan informasi penting dengan mudah</p>
+
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-text">Berita terupdate setiap hari</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-text">Jadwal kegiatan dan agenda</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-text">Akses offline tersedia</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-text">Notifikasi untuk berita penting</div>
+                </div>
+            </div>
+
+            <div class="download-section">
+                <button class="download-btn" onclick="downloadApp()">
+                    <span class="play-icon">▶</span>
+                    Download di Google Play
+                </button>
+                <div class="info-text" id="status" style="display: none;">
+                    Membuka Google Play Store<span class="loading"></span><span class="loading"></span><span class="loading"></span>
+                </div>
+            </div>
+
+            <div class="requirements">
+                <strong>Syarat Sistem:</strong><br>
+                Android 5.0 atau lebih baru
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>
+                <a href="https://nulumbung.or.id" target="_blank">Kunjungi Website</a> • 
+                <a href="https://nulumbung.or.id/kebijakan-privasi" target="_blank">Kebijakan Privasi</a> • 
+                <a href="https://nulumbung.or.id/syarat-ketentuan" target="_blank">Syarat & Ketentuan</a>
+            </p>
+            <p style="margin-top: 12px; opacity: 0.8;">© 2024 NU LUMBUNG. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        // Auto-download on page load
+        window.addEventListener('load', function() {
+            // Check if it's mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                // Show loading status
+                document.getElementById('status').style.display = 'block';
+                
+                // Redirect to Google Play Store after 1 second
+                setTimeout(() => {
+                    window.location.href = 'https://play.google.com/store/apps/details?id=or.nulumbung.twa';
+                }, 1000);
+            }
+        });
+
+        // Manual download function
+        function downloadApp() {
+            document.getElementById('status').style.display = 'block';
+            
+            // Redirect to Google Play Store
+            window.location.href = 'https://play.google.com/store/apps/details?id=or.nulumbung.twa';
+            
+            // Fallback after 3 seconds
+            setTimeout(() => {
+                window.open('https://play.google.com/store/apps/details?id=or.nulumbung.twa', '_blank');
+            }, 3000);
+        }
+
+        // Keyboard shortcut
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                downloadApp();
+            }
+        });
+    </script>
+</body>
+</html>
