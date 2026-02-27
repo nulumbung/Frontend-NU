@@ -1,57 +1,73 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/components/auth/auth-context';
+import { createLiveStreamService, LiveStream } from '@/lib/services/live-stream.service';
 import { 
   Plus, 
   Search, 
   Edit, 
   Trash2, 
   Video,
-  Radio
+  Radio,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 
-interface LiveStream {
-  id: number;
-  title: string | null;
-  youtube_id: string;
-  channel_name: string | null;
-  thumbnail_url: string | null;
-  is_active: boolean;
-  status: string | null;
-}
+const getErrorMessage = (error: unknown): string => {
+  const apiMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message;
+  if (typeof apiMessage === 'string' && apiMessage.trim()) return apiMessage;
+  return error instanceof Error ? error.message : 'Unknown error occurred';
+};
 
 export default function LiveStreamsPage() {
   const [streams, setStreams] = useState<LiveStream[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchStreams();
-  }, []);
+  const liveStreamService = createLiveStreamService(api);
 
-  const fetchStreams = async () => {
+  const fetchStreams = useCallback(async () => {
     try {
-      const response = await api.get('/live-streams');
-      setStreams(response.data.data); // Assuming API returns { data: [...] }
-    } catch (error) {
-      console.error('Failed to fetch live streams', error);
+      setIsLoading(true);
+      setError(null);
+      const result = await liveStreamService.getAll();
+      setStreams(result.streams);
+    } catch (err) {
+      const message = getErrorMessage(err);
+      console.error('Failed to fetch live streams:', message);
+      setError(message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [liveStreamService]);
+
+  useEffect(() => {
+    fetchStreams();
+  }, [fetchStreams]);
 
   const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this live stream?')) {
-      try {
-        await api.delete(`/live-streams/${id}`);
-        fetchStreams();
-      } catch (error) {
-        console.error('Failed to delete live stream', error);
-        alert('Failed to delete live stream');
-      }
+    if (!confirm('Apakah Anda yakin ingin menghapus siaran ini?')) {
+      return;
+    }
+
+    try {
+      setIsDeleting(id);
+      setError(null);
+      await liveStreamService.delete(id);
+      setSuccessMessage('Siaran berhasil dihapus');
+      setTimeout(() => setSuccessMessage(null), 3000);
+      await fetchStreams();
+    } catch (err) {
+      const message = getErrorMessage(err);
+      console.error('Failed to delete live stream:', message);
+      setError(message);
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -65,6 +81,25 @@ export default function LiveStreamsPage() {
 
   return (
     <div>
+      {/* Error Alert */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-red-900">Terjadi Kesalahan</h3>
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Success Alert */}
+      {successMessage && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+          <div className="w-5 h-5 rounded-full bg-green-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-green-700 font-medium">{successMessage}</p>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Management Siaran Langsung</h1>
@@ -156,7 +191,8 @@ export default function LiveStreamsPage() {
                         </Link>
                         <button 
                           onClick={() => handleDelete(stream.id)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          disabled={isDeleting === stream.id}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
