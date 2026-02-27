@@ -15,12 +15,12 @@ import Link from 'next/link';
 
 interface LiveStream {
   id: number;
-  title: string;
+  title: string | null;
   youtube_id: string;
-  channel_name: string;
-  thumbnail_url: string;
+  channel_name: string | null;
+  thumbnail_url: string | null;
   is_active: boolean;
-  status: string;
+  status: string | null;
 }
 
 export default function LiveStreamsPage() {
@@ -55,10 +55,11 @@ export default function LiveStreamsPage() {
     }
   };
 
-  const filteredStreams = streams.filter(stream => {
-    const title = (stream.title || '').toLowerCase();
-    const channelName = (stream.channel_name || '').toLowerCase();
-    const query = searchQuery.toLowerCase();
+  const filteredStreams = (streams || []).filter(stream => {
+    if (!stream) return false;
+    const title = (stream?.title ?? '').toString().toLowerCase();
+    const channelName = (stream?.channel_name ?? '').toString().toLowerCase();
+    const query = (searchQuery ?? '').toString().toLowerCase();
     return title.includes(query) || channelName.includes(query);
   });
 
@@ -117,7 +118,7 @@ export default function LiveStreamsPage() {
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600 animate-pulse">
                           <Radio className="w-3 h-3" /> LIVE
                         </span>
-                      ) : stream.status === 'upcoming' ? (
+                      ) : (stream.status ?? '').toLowerCase() === 'upcoming' ? (
                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           UPCOMING
                         </span>
@@ -140,8 +141,8 @@ export default function LiveStreamsPage() {
                            )}
                         </div>
                         <div>
-                            <p className="font-medium text-gray-900 line-clamp-1">{stream.title}</p>
-                            <p className="text-xs text-gray-500">{stream.channel_name}</p>
+                            <p className="font-medium text-gray-900 line-clamp-1">{stream.title || 'Untitled'}</p>
+                            <p className="text-xs text-gray-500">{stream.channel_name || 'Unknown Channel'}</p>
                         </div>
                       </div>
                     </td>
