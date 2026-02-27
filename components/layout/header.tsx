@@ -319,6 +319,7 @@ export function Header() {
                       </div>
                     </div>
                 )}
+              </div>
             ))}
           </nav>
 
@@ -368,7 +369,8 @@ export function Header() {
               "fixed top-0 right-0 bottom-0 z-[999] w-[50vw] bg-background/80 backdrop-blur-md lg:hidden pt-[80px] px-6 border-l border-white/10 shadow-2xl transition-transform duration-300",
               isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
             )}
-              <div className="flex flex-col gap-4 overflow-y-auto h-full pb-20">
+          >
+            <div className="flex flex-col gap-4 overflow-y-auto h-full pb-20">
                 {navItems.map((item, idx) => (
                   <div key={idx} className="border-b border-white/5 pb-4">
                     <div className="flex items-center justify-between">
@@ -531,10 +533,9 @@ export function Header() {
                   </>
                 )}
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
     </>
   );
 }

@@ -162,7 +162,7 @@ export function HeroSection() {
                 <motion.div
                   className="whitespace-nowrap flex gap-12 text-sm text-foreground/90 font-medium"
                   animate={{ x: [0, -1000] }}
-                  transition={{ repeat: Infinity, duration: 20, ease: "linear", reduceMotion: "always" }}
+                  transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
                 >
                   {scrollingTitles.map((title, i) => (
                     <span key={`${title}-${i}`} className="flex items-center gap-2">
