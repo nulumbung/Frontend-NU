@@ -53,9 +53,11 @@ export default function MultimediaPage() {
     }
   };
 
-  const filteredItems = items.filter(item => 
-    item.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = items.filter(item => {
+    const title = (item.title || '').toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return title.includes(query);
+  });
 
   return (
     <div>

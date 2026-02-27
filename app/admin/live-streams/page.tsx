@@ -55,10 +55,12 @@ export default function LiveStreamsPage() {
     }
   };
 
-  const filteredStreams = streams.filter(stream => 
-    stream.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    stream.channel_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredStreams = streams.filter(stream => {
+    const title = (stream.title || '').toLowerCase();
+    const channelName = (stream.channel_name || '').toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return title.includes(query) || channelName.includes(query);
+  });
 
   return (
     <div>

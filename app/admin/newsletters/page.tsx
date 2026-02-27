@@ -103,9 +103,11 @@ export default function NewslettersPage() {
     document.body.removeChild(link);
   };
 
-  const filteredSubscribers = subscribers.filter(sub => 
-    sub.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredSubscribers = subscribers.filter(sub => {
+    const email = (sub.email || '').toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return email.includes(query);
+  });
 
   return (
     <div>

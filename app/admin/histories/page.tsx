@@ -51,10 +51,12 @@ export default function HistoriesPage() {
     }
   };
 
-  const filteredHistories = histories.filter(item => 
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.year.includes(searchQuery)
-  );
+  const filteredHistories = histories.filter(item => {
+    const title = (item.title || '').toLowerCase();
+    const year = (item.year || '').toString();
+    const query = searchQuery.toLowerCase();
+    return title.includes(query) || year.includes(query);
+  });
 
   return (
     <div>

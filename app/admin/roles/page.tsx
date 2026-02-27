@@ -104,11 +104,13 @@ export default function RolesPage() {
     }
   };
 
-  const filteredRoles = roles.filter(role =>
-    role.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    role.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (role.description && role.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredRoles = roles.filter(role => {
+    const displayName = (role.display_name || '').toLowerCase();
+    const name = (role.name || '').toLowerCase();
+    const description = (role.description || '').toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return displayName.includes(query) || name.includes(query) || description.includes(query);
+  });
 
   const getRoleIcon = (name: string) => {
     switch (name) {

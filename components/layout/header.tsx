@@ -176,9 +176,11 @@ export function Header() {
     const keyword = searchQuery.toLowerCase();
     return searchIndex
       .filter(
-        (item) =>
-          item.title.toLowerCase().includes(keyword) ||
-          (item.category && item.category.toLowerCase().includes(keyword))
+        (item) => {
+          const title = (item.title || '').toLowerCase();
+          const category = (item.category || '').toLowerCase();
+          return title.includes(keyword) || category.includes(keyword);
+        }
       )
       .slice(0, 5);
   }, [searchIndex, searchQuery]);

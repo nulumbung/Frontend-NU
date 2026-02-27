@@ -100,11 +100,14 @@ export default function PostsPage() {
     }
   };
 
-  const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-    (statusFilter ? post.status === statusFilter : true) &&
-    (categoryFilter ? String(post.category_id) === categoryFilter : true)
-  );
+  const filteredPosts = posts.filter(post => {
+    const title = (post.title || '').toLowerCase();
+    const query = searchQuery.toLowerCase();
+    const matchesTitle = title.includes(query);
+    const matchesStatus = statusFilter ? post.status === statusFilter : true;
+    const matchesCategory = categoryFilter ? String(post.category_id) === categoryFilter : true;
+    return matchesTitle && matchesStatus && matchesCategory;
+  });
 
   return (
     <div>
