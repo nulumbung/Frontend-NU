@@ -101,7 +101,7 @@ export function ImageInput({ label, value, onChange, className = '', placeholder
         <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
             {isUploading ? (
                 <div className="flex flex-col items-center justify-center py-4">
-                    <Loader2 className="w-8 h-8 animate-spin text-green-600 mb-2" />
+                    <div className="w-8 h-8 border-4 border-green-200 border-t-green-600 rounded-full mb-2" style={{ animation: 'spin 1s linear infinite' }} />
                     <p className="text-sm text-gray-500">Mengupload...</p>
                 </div>
             ) : (

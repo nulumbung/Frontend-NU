@@ -1,0 +1,38 @@
+
+> frontend@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env.production
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 1 errors:
+./components/layout/header.tsx:322:15
+Parsing ecmascript source code failed
+[0m [90m 320 |[39m                     [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 321 |[39m                 )}
+[31m[1m>[22m[39m[90m 322 |[39m             ))}
+ [90m     |[39m               [31m[1m^[22m[39m
+ [90m 323 |[39m           [33m<[39m[33m/[39m[33mnav[39m[33m>[39m
+ [90m 324 |[39m
+ [90m 325 |[39m           {[90m/* Right: Actions */[39m}[0m
+
+Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+
+Import traces:
+  Client Component Browser:
+    ./components/layout/header.tsx [Client Component Browser]
+    ./components/layout/root-layout-content.tsx [Client Component Browser]
+    ./components/layout/root-layout-content.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/layout/header.tsx [Client Component SSR]
+    ./components/layout/root-layout-content.tsx [Client Component SSR]
+    ./components/layout/root-layout-content.tsx [Server Component]
+    ./app/layout.tsx [Server Component]
+
+
+    at <unknown> (./components/layout/header.tsx:322:15)

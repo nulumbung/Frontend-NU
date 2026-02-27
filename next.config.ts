@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   
   // Image optimization
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -83,6 +84,18 @@ const nextConfig: NextConfig = {
             key: 'Cache-Control',
             value: 'public, max-age=3600, must-revalidate'
           },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.nulumbung.or.id https://www.google-analytics.com; media-src 'self' https:; frame-ancestors 'none';"
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload'
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'geolocation=(), microphone=(), camera=()'
+          },
         ],
       },
       {
@@ -96,6 +109,15 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/fonts/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',
@@ -119,6 +141,16 @@ const nextConfig: NextConfig = {
       {
         source: '/api/:path*',
         destination: 'https://api.nulumbung.or.id/api/:path*',
+      },
+    ];
+  },
+
+  async redirects() {
+    return [
+      {
+        source: '/index.html',
+        destination: '/',
+        permanent: true,
       },
     ];
   },

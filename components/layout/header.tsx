@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Menu, X, ChevronDown, Hash } from 'lucide-react';
 import * as MdIcons from 'react-icons/md';
 import type { IconType } from 'react-icons';
@@ -232,22 +231,16 @@ export function Header() {
 
                 {/* Animated Underline */}
                 {pathname === item.href && (
-                  <motion.div 
-                    layoutId="nav-underline"
-                    className="absolute bottom-4 left-0 right-0 h-[2px] bg-gradient-to-r from-accent-teal to-accent"
+                  <div 
+                    className="absolute bottom-4 left-0 right-0 h-[2px] bg-gradient-to-r from-accent-teal to-accent transition-opacity"
                   />
                 )}
 
                 {/* Mega Dropdown */}
-                <AnimatePresence>
-                  {item.hasDropdown && activeDropdown === item.label && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute top-full left-1/2 transform -translate-x-1/2 pt-2"
-                    >
+                {item.hasDropdown && activeDropdown === item.label && (
+                  <div
+                    className="absolute top-full left-1/2 transform -translate-x-1/2 pt-2 transition-all duration-300 opacity-100 visible"
+                  >
                       <div className="bg-card/95 backdrop-blur-xl border border-accent/20 rounded-xl shadow-2xl neon-box overflow-hidden">
                         {item.label === 'Banom' ? (
                           <div className="grid grid-cols-2 gap-4 p-6 w-[520px]">
@@ -324,10 +317,8 @@ export function Header() {
                           </div>
                         ) : null}
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                    </div>
+                )}
             ))}
           </nav>
 
@@ -345,7 +336,6 @@ export function Header() {
               className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full border border-red-500/50 bg-red-500/10 text-red-400 text-xs font-bold tracking-wider hover:bg-red-500/20 transition-all group"
             >
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
               </span>
               LIVE
@@ -364,27 +354,20 @@ export function Header() {
       </header>
 
       {/* Mobile Menu Drawer */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <>
-            <motion.button
-              type="button"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[998] bg-black/40 lg:hidden"
-              onClick={() => setIsMobileMenuOpen(false)}
-              aria-label="Tutup sidebar"
-            />
+      {isMobileMenuOpen && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-[998] bg-black/40 lg:hidden transition-opacity duration-300"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="Tutup sidebar"
+          />
 
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 bottom-0 z-[999] w-[50vw] bg-background/80 backdrop-blur-md lg:hidden pt-[80px] px-6 border-l border-white/10 shadow-2xl"
-            >
+          <div
+            className={cn(
+              "fixed top-0 right-0 bottom-0 z-[999] w-[50vw] bg-background/80 backdrop-blur-md lg:hidden pt-[80px] px-6 border-l border-white/10 shadow-2xl transition-transform duration-300",
+              isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+            )}
               <div className="flex flex-col gap-4 overflow-y-auto h-full pb-20">
                 {navItems.map((item, idx) => (
                   <div key={idx} className="border-b border-white/5 pb-4">
@@ -412,14 +395,10 @@ export function Header() {
                     </div>
                     
                     {/* Mobile Dropdown Content */}
-                    <AnimatePresence>
-                      {item.hasDropdown && mobileExpanded === item.label && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden"
-                        >
+                    {item.hasDropdown && mobileExpanded === item.label && (
+                      <div
+                        className="overflow-hidden transition-all duration-300 max-h-96"
+                      >
                           <div className="pt-2 pl-3 flex flex-col gap-2 border-l border-white/10 ml-1">
                             {item.label === 'Banom' && (
                               banoms.map((banom) => (
@@ -458,9 +437,8 @@ export function Header() {
                               })
                             )}
                           </div>
-                        </motion.div>
+                        </div>
                       )}
-                    </AnimatePresence>
                   </div>
                 ))}
                 <div className="mt-8">
@@ -472,31 +450,23 @@ export function Header() {
                   </Link>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </>
         )}
-      </AnimatePresence>
 
       {/* Search Overlay */}
-      <AnimatePresence>
-        {isSearchOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[2000] bg-background/80 backdrop-blur-sm flex flex-col items-center justify-start pt-24 md:pt-32 px-4"
+      {isSearchOpen && (
+        <div
+          className="fixed inset-0 z-[2000] bg-background/80 backdrop-blur-sm flex flex-col items-center justify-start pt-24 md:pt-32 px-4 transition-opacity duration-300 opacity-100 visible"
+        >
+          <div 
+            className="absolute inset-0"
+            onClick={() => setIsSearchOpen(false)} 
+          />
+          
+          <div 
+            className="w-full max-w-2xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden relative z-10 transition-all duration-300 scale-100 opacity-100"
           >
-            <div 
-              className="absolute inset-0"
-              onClick={() => setIsSearchOpen(false)} 
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.9, y: -20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: -20 }}
-              className="w-full max-w-2xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden relative z-10"
-            >
               <div className="relative border-b border-border">
                 <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-6 h-6 text-muted-foreground" />
                 <input 

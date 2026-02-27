@@ -68,7 +68,7 @@ export function AgendaSection() {
     <section className="py-20 bg-surface relative overflow-hidden">
       {/* Decorative Background */}
       <div className="absolute inset-0 bg-[url('/patterns/topography.svg')] opacity-[0.03]" />
-      <div className="absolute -left-20 top-1/2 w-64 h-64 bg-accent/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute -left-20 top-1/2 w-64 h-64 bg-accent/10 rounded-full blur-3xl opacity-50" />
       
       <div className="container mx-auto px-4 relative z-10">
         
@@ -76,7 +76,7 @@ export function AgendaSection() {
           <div>
             <h2 className="font-serif text-4xl md:text-5xl font-bold text-foreground mb-4 relative inline-block">
               Agenda Terkini
-              <span className="absolute -right-8 -top-4 text-accent animate-bounce text-6xl">.</span>
+              <span className="absolute -right-8 -top-4 text-accent text-6xl">·</span>
             </h2>
             <p className="text-muted-foreground max-w-xl text-lg">
               Ikuti berbagai kegiatan dan acara penting Nahdlatul Ulama yang akan datang.

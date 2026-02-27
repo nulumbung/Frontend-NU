@@ -152,7 +152,6 @@ export function HeroSection() {
         <div className="mb-8 rounded-lg overflow-hidden border border-red-500/20 bg-red-950/30 flex items-center relative">
           <div className="bg-red-600 text-white px-4 py-2 text-xs font-bold tracking-wider z-10 flex items-center gap-2 shadow-xl">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
             </span>
             BREAKING
@@ -163,7 +162,7 @@ export function HeroSection() {
                 <motion.div
                   className="whitespace-nowrap flex gap-12 text-sm text-foreground/90 font-medium"
                   animate={{ x: [0, -1000] }}
-                  transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                  transition={{ repeat: Infinity, duration: 20, ease: "linear", reduceMotion: "always" }}
                 >
                   {scrollingTitles.map((title, i) => (
                     <span key={`${title}-${i}`} className="flex items-center gap-2">

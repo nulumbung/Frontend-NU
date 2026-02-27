@@ -375,7 +375,7 @@ export default function BeritaDetail({ params }: { params: Promise<{ slug: strin
             )}
 
             {/* Article Content */}
-            <div className="prose prose-lg max-w-none font-serif text-foreground leading-relaxed [&_img]:w-full [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-6 [&_figure.article-inline-image]:my-8 [&_figure.article-inline-image]:mx-0 [&_figure.article-inline-image>img]:my-0 [&_figure.article-inline-image>img]:rounded-xl [&_figure.article-inline-image>figcaption]:mt-2 [&_figure.article-inline-image>figcaption]:text-center [&_figure.article-inline-image>figcaption]:text-xs [&_figure.article-inline-image>figcaption]:italic [&_figure.article-inline-image>figcaption]:text-muted-foreground">
+            <div className="prose prose-lg max-w-none font-sans text-foreground leading-relaxed [&_img]:w-full [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-6 [&_figure.article-inline-image]:my-8 [&_figure.article-inline-image]:mx-0 [&_figure.article-inline-image>img]:my-0 [&_figure.article-inline-image>img]:rounded-xl [&_figure.article-inline-image>figcaption]:mt-2 [&_figure.article-inline-image>figcaption]:text-center [&_figure.article-inline-image>figcaption]:text-xs [&_figure.article-inline-image>figcaption]:italic [&_figure.article-inline-image>figcaption]:text-muted-foreground">
               {news.excerpt && (
                 <p className="font-bold text-lg text-foreground mb-6">
                   {news.excerpt}
