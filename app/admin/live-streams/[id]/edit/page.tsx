@@ -41,7 +41,7 @@ export default function EditLiveStreamPage() {
         const stream = await liveStreamService.getById(Number(params.id));
         
         // Format datetime-local
-        const formatDateTime = (dateString?: string) => {
+        const formatDateTime = (dateString?: string | null) => {
             if (!dateString) return '';
             const d = new Date(dateString);
             return d.toISOString().slice(0, 16);
