@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Performance optimizations
+  compress: true,
+  productionBrowserSourceMaps: false,
+  
+  // Image optimization
   images: {
     remotePatterns: [
       {
@@ -44,7 +49,63 @@ const nextConfig: NextConfig = {
         hostname: 'api.nulumbung.or.id',
       },
     ],
+    // Cache optimized images for 1 year
+    minimumCacheTTL: 31536000,
   },
+
+  // Headers for performance and security
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, must-revalidate'
+          },
+        ],
+      },
+      {
+        source: '/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/fonts/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
+
   async rewrites() {
     if (process.env.NODE_ENV === 'development') {
       return [
@@ -54,8 +115,6 @@ const nextConfig: NextConfig = {
         },
       ];
     }
-    // In production, rewrite /api to the actual backend domain
-    // This handles cases where NEXT_PUBLIC_API_URL is not properly set
     return [
       {
         source: '/api/:path*',

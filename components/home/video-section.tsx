@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Play } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { api } from '@/components/auth/auth-context';
 
 interface MultimediaItem {
@@ -15,31 +15,37 @@ interface MultimediaItem {
   date?: string | null;
 }
 
-const REFRESH_INTERVAL = 30000;
+const REFRESH_INTERVAL = 60000; // Increased from 30s to 60s
 const toArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
 export function VideoSection() {
   const [items, setItems] = useState<MultimediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const response = await api.get('/multimedia');
-        const rows: MultimediaItem[] = toArray<MultimediaItem>(response.data);
-        setItems(rows.filter((item) => item.type === 'video').slice(0, 4));
-      } catch (error) {
-        console.error('Failed to fetch multimedia for homepage:', error);
-        setItems([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchVideos();
-    const intervalId = window.setInterval(fetchVideos, REFRESH_INTERVAL);
-    return () => window.clearInterval(intervalId);
+  const fetchVideos = useCallback(async () => {
+    try {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 5000)
+      );
+      const response = await Promise.race([api.get('/multimedia'), timeoutPromise]);
+      const rows: MultimediaItem[] = toArray<MultimediaItem>((response as any).data);
+      setItems(rows.filter((item) => item.type === 'video').slice(0, 4));
+    } catch (error) {
+      console.error('Failed to fetch multimedia for homepage:', error);
+      setItems([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    const initialTimer = setTimeout(() => fetchVideos(), 100); // Defer initial fetch
+    const intervalId = window.setInterval(fetchVideos, REFRESH_INTERVAL);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(intervalId);
+    };
+  }, [fetchVideos]);
 
   const mainVideo = useMemo(() => items[0], [items]);
   const sideVideos = useMemo(() => items.slice(1, 4), [items]);
@@ -47,7 +53,9 @@ export function VideoSection() {
   if (isLoading) {
     return (
       <section className="py-20 bg-background relative">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">Loading multimedia...</div>
+        <div className="container mx-auto px-4 text-center text-muted-foreground">
+          <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
+        </div>
       </section>
     );
   }
@@ -86,8 +94,9 @@ export function VideoSection() {
                 src={mainVideo.thumbnail}
                 alt={mainVideo.title}
                 fill
+                priority
+                sizes="(max-width: 768px) 100vw, 66vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
-                unoptimized
               />
             ) : (
               <div className="absolute inset-0 bg-secondary/50" />
@@ -108,7 +117,7 @@ export function VideoSection() {
           </Link>
 
           <div className="flex flex-col gap-6">
-            {sideVideos.map((video) => (
+            {sideVideos.map((video, idx) => (
               <Link
                 href={`/multimedia/${video.slug || video.id}`}
                 key={video.id}
@@ -121,8 +130,9 @@ export function VideoSection() {
                       src={video.thumbnail}
                       alt={video.title}
                       fill
+                      loading={idx === 0 ? "eager" : "lazy"}
+                      sizes="160px"
                       className="object-cover"
-                      unoptimized
                     />
                   ) : (
                     <div className="absolute inset-0 bg-secondary/50" />

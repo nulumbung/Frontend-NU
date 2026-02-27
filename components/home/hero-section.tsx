@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Clock } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { api } from '@/components/auth/auth-context';
 
 interface NewsItem {
@@ -29,7 +29,7 @@ interface NewsItem {
   is_headline?: boolean;
 }
 
-const REFRESH_INTERVAL = 30000;
+const REFRESH_INTERVAL = 60000; // Reduced from 30s to 60s
 const toArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
 export function HeroSection() {
@@ -39,55 +39,64 @@ export function HeroSection() {
   const [latestNews, setLatestNews] = useState<NewsItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const [headlineResult, featuredResult, breakingResult, latestResult] = await Promise.allSettled([
-          api.get('/posts/latest', { params: { headline: 1, limit: 1 } }),
-          api.get('/posts/latest', { params: { featured: 1, limit: 6 } }),
-          api.get('/posts/latest', { params: { breaking: 1, limit: 8 } }),
-          api.get('/posts/latest', { params: { limit: 6 } }),
-        ]);
+  const fetchNews = useCallback(async () => {
+    try {
+      // Use Promise.race with timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 8000)
+      );
 
-        const headlineRows =
-          headlineResult.status === 'fulfilled' ? toArray<NewsItem>(headlineResult.value.data) : [];
-        const featuredRows =
-          featuredResult.status === 'fulfilled' ? toArray<NewsItem>(featuredResult.value.data) : [];
-        const breakingRows =
-          breakingResult.status === 'fulfilled' ? toArray<NewsItem>(breakingResult.value.data) : [];
-        const latestRows =
-          latestResult.status === 'fulfilled' ? toArray<NewsItem>(latestResult.value.data) : [];
+      const [headlineResult, featuredResult, breakingResult, latestResult] = await Promise.allSettled([
+        Promise.race([api.get('/posts/latest', { params: { headline: 1, limit: 1 } }), timeoutPromise]),
+        Promise.race([api.get('/posts/latest', { params: { featured: 1, limit: 4 } }), timeoutPromise]), // Reduced from 6 to 4
+        Promise.race([api.get('/posts/latest', { params: { breaking: 1, limit: 4 } }), timeoutPromise]), // Reduced from 8 to 4
+        Promise.race([api.get('/posts/latest', { params: { limit: 3 } }), timeoutPromise]), // Reduced from 6 to 3
+      ]);
 
-        setHeadlineNews(headlineRows);
-        setFeaturedNews(featuredRows);
-        setBreakingNews(breakingRows);
-        setLatestNews(latestRows);
-      } catch (error) {
-        console.error("Failed to fetch hero news:", error);
-        setHeadlineNews([]);
-        setFeaturedNews([]);
-        setBreakingNews([]);
-        setLatestNews([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      const headlineRows =
+        headlineResult.status === 'fulfilled' ? toArray<NewsItem>((headlineResult.value as any).data) : [];
+      const featuredRows =
+        featuredResult.status === 'fulfilled' ? toArray<NewsItem>((featuredResult.value as any).data) : [];
+      const breakingRows =
+        breakingResult.status === 'fulfilled' ? toArray<NewsItem>((breakingResult.value as any).data) : [];
+      const latestRows =
+        latestResult.status === 'fulfilled' ? toArray<NewsItem>((latestResult.value as any).data) : [];
 
-    fetchNews();
-    const intervalId = window.setInterval(fetchNews, REFRESH_INTERVAL);
-    return () => window.clearInterval(intervalId);
+      setHeadlineNews(headlineRows);
+      setFeaturedNews(featuredRows);
+      setBreakingNews(breakingRows);
+      setLatestNews(latestRows);
+    } catch (error) {
+      console.error("Failed to fetch hero news:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    // Initial fetch
+    const initialTimer = setTimeout(() => fetchNews(), 100); // Defer initial fetch slightly
+    
+    // Polling interval
+    const intervalId = window.setInterval(fetchNews, REFRESH_INTERVAL);
+    
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(intervalId);
+    };
+  }, [fetchNews]);
+
   if (isLoading) {
-      return (
-        <section className="relative pt-6 pb-12 overflow-hidden min-h-[600px] flex items-center justify-center">
-             <p>Loading...</p>
-        </section>
-      )
+    return (
+      <section className="relative pt-6 pb-12 overflow-hidden min-h-[600px] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </section>
+    );
   }
 
-  const primaryPool = featuredNews.length > 0 ? featuredNews : latestNews;
-  const mainNews = headlineNews[0] || primaryPool[0];
+  const primaryPool = useMemo(() => featuredNews.length > 0 ? featuredNews : latestNews, [featuredNews, latestNews]);
+  const mainNews = useMemo(() => headlineNews[0] || primaryPool[0], [headlineNews, primaryPool]);
+  
   if (!mainNews) {
     return (
       <section className="relative pt-6 pb-12 overflow-hidden min-h-[360px] flex items-center justify-center">
@@ -96,25 +105,37 @@ export function HeroSection() {
     );
   }
 
-  const featuredUnique = Array.from(
-    new Map(featuredNews.map((item) => [item.id, item])).values()
+  const featuredUnique = useMemo(() => 
+    Array.from(new Map(featuredNews.map((item) => [item.id, item])).values()),
+    [featuredNews]
   );
-  const featuredSidePool = featuredUnique.filter((item) => item.id !== mainNews.id).slice(0, 3);
-  const sideNews =
+
+  const featuredSidePool = useMemo(() =>
+    featuredUnique.filter((item) => item.id !== mainNews.id).slice(0, 2), // Reduced from 3 to 2
+    [featuredUnique, mainNews]
+  );
+
+  const sideNews = useMemo(() =>
     featuredSidePool.length > 0
       ? featuredSidePool
       : featuredUnique.some((item) => item.id === mainNews.id)
         ? [mainNews]
-        : [];
-  const tickerPool = breakingNews;
-  const tickerTitles = Array.from(
-    new Set(
-      tickerPool
-        .map((item) => (item.title || '').trim())
-        .filter((title) => title.length > 0)
-    )
-  )
-    .slice(0, 8);
+        : [],
+    [featuredSidePool, featuredUnique, mainNews]
+  );
+
+  const tickerPool = useMemo(() => breakingNews, [breakingNews]);
+  const tickerTitles = useMemo(() =>
+    Array.from(
+      new Set(
+        tickerPool
+          .map((item) => (item.title || '').trim())
+          .filter((title) => title.length > 0)
+      )
+    ).slice(0, 6), // Reduced from 8 to 6
+    [tickerPool]
+  );
+
   const breakingTitles = tickerTitles.length > 0 ? tickerTitles : ['Belum ada breaking news'];
   const useTickerMarquee = breakingTitles.length > 1;
   const scrollingTitles = useTickerMarquee ? [...breakingTitles, ...breakingTitles] : breakingTitles;
@@ -123,9 +144,8 @@ export function HeroSection() {
 
   return (
     <section className="relative pt-6 pb-12 overflow-hidden">
-      {/* Background Elements */}
+      {/* Background Elements - simplified for perf */}
       <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-primary/20 to-transparent opacity-50 pointer-events-none" />
-      <div className="absolute top-20 right-20 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-pulse" />
       
       <div className="container mx-auto px-4">
         {/* Breaking News Ticker */}
@@ -166,7 +186,7 @@ export function HeroSection() {
         {/* Hero Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
-          {/* Main Headline (Left - 7 cols) */}
+          {/* Main Headline (Left - 8 cols) */}
           <div className="lg:col-span-8 group cursor-pointer relative min-h-[320px] md:min-h-[420px]">
             <Link href={`/berita/${mainNews.slug}`} className="block h-full min-h-[320px] md:min-h-[420px] relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
@@ -175,8 +195,9 @@ export function HeroSection() {
                   src={mainNews.image} 
                   alt={mainTitle}
                   fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
-                  unoptimized
                 />
               ) : (
                 <div className="absolute inset-0 bg-secondary/40" />
@@ -204,7 +225,6 @@ export function HeroSection() {
                           alt={mainAuthorName || 'Penulis'} 
                           fill 
                           className="object-cover" 
-                          unoptimized 
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">
@@ -224,13 +244,10 @@ export function HeroSection() {
                   )}
                 </div>
               </div>
-
-              {/* Corner Ornament */}
-              <div className="absolute top-6 right-6 w-16 h-16 border-t-2 border-r-2 border-accent/50 rounded-tr-xl z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </Link>
           </div>
 
-          {/* Side News (Right - 5 cols) */}
+          {/* Side News (Right - 4 cols) */}
           <div className="lg:col-span-4 flex flex-col gap-4">
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-serif font-bold text-xl text-foreground flex items-center gap-2">
@@ -240,7 +257,7 @@ export function HeroSection() {
             </div>
             
             <div className="flex flex-col gap-4 h-full">
-              {sideNews.map((news) => (
+              {sideNews.map((news, idx) => (
                 <Link 
                   key={news.id} 
                   href={`/berita/${news.slug}`}
@@ -252,8 +269,9 @@ export function HeroSection() {
                         src={news.image} 
                         alt={news.title} 
                         fill 
+                        loading={idx === 0 ? "eager" : "lazy"}
+                        sizes="96px"
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
-                        unoptimized
                       />
                     ) : (
                       <div className="absolute inset-0 bg-secondary/50" />

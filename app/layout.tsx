@@ -1,60 +1,55 @@
-'use client';
-
+import type { Metadata } from "next";
 import { Playfair_Display, Space_Grotesk, Amiri, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
-import { AuthProvider } from "@/components/auth/auth-context";
-import { SiteSettingsProvider } from "@/components/settings/site-settings-context";
-import { SiteMetaSync } from "@/components/settings/site-meta-sync";
+import { RootLayoutContent } from "@/components/layout/root-layout-content";
 import { SEOScripts } from "@/components/seo/seo-scripts";
-import { PWAInstaller } from "@/components/pwa/pwa-installer";
-import { usePathname } from 'next/navigation';
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 });
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space",
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 });
 
 const amiri = Amiri({
   variable: "--font-amiri",
   weight: ["400", "700"],
   subsets: ["arabic", "latin"],
+  display: "swap",
+  preload: true,
 });
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 });
 
-function RootLayoutContent({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const pathname = usePathname();
-  const isAdmin = pathname?.startsWith('/admin');
-
-  return (
-    <>
-      <AuthProvider>
-        <SiteSettingsProvider>
-          <SiteMetaSync />
-          {!isAdmin && <Header />}
-          <main className={!isAdmin ? "flex-grow pt-[60px] md:pt-[72px]" : "flex-grow"}>
-            {children}
-          </main>
-          {!isAdmin && <Footer />}
-        </SiteSettingsProvider>
-      </AuthProvider>
-    </>
-  );
-}
+export const metadata: Metadata = {
+  title: {
+    template: '%s | NU LUMBUNG',
+    default: 'NU LUMBUNG - Nahdlatul Ulama Lumbung',
+  },
+  description: 'Platform resmi Nahdlatul Ulama Lumbung. Jelajahi berita, agenda, multimedia, dan informasi organisasi terpercaya.',
+  keywords: ['NU', 'Nahdlatul Ulama', 'Lumbung', 'organisasi', 'berita'],
+  openGraph: {
+    type: 'website',
+    locale: 'id_ID',
+    url: process.env.NEXT_PUBLIC_APP_URL,
+    siteName: 'NU LUMBUNG',
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
+};
 
 export default function RootLayout({
   children,
@@ -62,7 +57,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <head>
         {/* Search Engine Verification */}
         <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || ''} />
@@ -81,6 +76,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="NU LUMBUNG" />
         <meta name="application-name" content="NU LUMBUNG" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" href="/favicon.ico" sizes="any" type="image/x-icon" />
@@ -91,7 +87,6 @@ export default function RootLayout({
       <body
         className={`${playfair.variable} ${spaceGrotesk.variable} ${amiri.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground font-sans min-h-screen flex flex-col`}
       >
-        <PWAInstaller />
         <RootLayoutContent>{children}</RootLayoutContent>
       </body>
     </html>

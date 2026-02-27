@@ -5,9 +5,15 @@ import { LatestNewsSection } from "@/components/home/latest-news-section";
 import { SpotlightSection } from "@/components/home/spotlight-section";
 import { AgendaSection } from "@/components/home/agenda-section";
 import { BanomSection } from "@/components/home/banom-section";
-import { VideoSection } from "@/components/home/video-section";
+import dynamic from 'next/dynamic';
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, Suspense } from "react";
+
+// Lazy load video section as it's below fold
+const VideoSection = dynamic(() => import("@/components/home/video-section").then(mod => ({ default: mod.VideoSection })), {
+  loading: () => <div className="py-20 bg-background text-center text-muted-foreground">Loading multimedia...</div>,
+  ssr: true,
+});
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -26,7 +32,9 @@ function HomeContent() {
       <SpotlightSection />
       <AgendaSection />
       <BanomSection />
-      <VideoSection />
+      <Suspense fallback={<div className="py-20 bg-background text-center text-muted-foreground">Loading multimedia...</div>}>
+        <VideoSection />
+      </Suspense>
     </>
   );
 }
@@ -34,7 +42,7 @@ function HomeContent() {
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<div className="py-20">Loading...</div>}>
         <HomeContent />
       </Suspense>
     </div>
