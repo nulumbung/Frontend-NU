@@ -12,7 +12,6 @@ import {
     Tag,
     FileText,
     CheckSquare,
-    Square,
     Info
 } from 'lucide-react';
 import Link from 'next/link';

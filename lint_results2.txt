@@ -1,0 +1,57 @@
+
+> frontend@0.1.0 lint
+> eslint
+
+
+D:\project\nulumbung\frontend\app\admin\layout.tsx
+  44:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\project\nulumbung\frontend\app\admin\layout.tsx:44:5
+  42 |   // Ensure component is mounted before rendering auth-dependent content
+  43 |   useEffect(() => {
+> 44 |     setIsMounted(true);
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  45 |   }, []);
+  46 |
+  47 |   // Auth Guard  react-hooks/set-state-in-effect
+
+D:\project\nulumbung\frontend\app\live\page.tsx
+  305:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\project\nulumbung\frontend\app\sitemap.ts
+  90:27  warning  '_request' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\project\nulumbung\frontend\app\verify-success\page.tsx
+  21:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\project\nulumbung\frontend\app\verify-success\page.tsx:21:13
+  19 |     useEffect(() => {
+  20 |         if (!id || !hash) {
+> 21 |             setStatus('error');
+     |             ^^^^^^^^^ Avoid calling setState() directly within an effect
+  22 |             setMessage('Tautan verifikasi tidak valid atau tidak lengkap.');
+  23 |             return;
+  24 |         }  react-hooks/set-state-in-effect
+
+D:\project\nulumbung\frontend\components\auth\auth-context.tsx
+  254:3  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  257:5  warning  React Hook useMemo has missing dependencies: 'login', 'loginWithGoogle', 'logout', and 'register'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\project\nulumbung\frontend\hooks\use-reduced-motion.ts
+  8:3  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+✖ 7 problems (3 errors, 4 warnings)
+  0 errors and 2 warnings potentially fixable with the `--fix` option.
+

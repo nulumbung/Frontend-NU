@@ -1,470 +1,244 @@
-
 'use client';
 
-import { useState, useRef } from 'react';
-import { api } from '@/components/auth/auth-context';
-import {
-    Download,
-    Upload,
-    Loader2,
-    HardDrive,
-    FileArchive,
-    CheckCircle2,
-    AlertTriangle,
-    Database,
-    Image,
-    Calendar,
-    User,
-    X,
-    Shield,
-    UploadCloud
-} from 'lucide-react';
-
-interface BackupManifest {
-    app: string;
-    version: string;
-    created_at: string;
-    created_by: string;
-    tables: Record<string, number>;
-    files_count: number;
-}
-
-interface RestoreResult {
-    message: string;
-    details: {
-        tables_restored: number;
-        files_restored: number;
-        backup_date: string;
-        backup_by: string;
-    };
-}
+import { useState, useEffect } from 'react';
+import { backupService, BackupItem } from '@/lib/services/backup.service';
+import { toast } from 'sonner';
+import { Loader2, HardDriveUpload, Download, Trash2, RefreshCw, UploadCloud, FileArchive } from 'lucide-react';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 export default function BackupPage() {
-    const [isBackingUp, setIsBackingUp] = useState(false);
-    const [isRestoring, setIsRestoring] = useState(false);
-    const [isPreviewing, setIsPreviewing] = useState(false);
-    const [backupSuccess, setBackupSuccess] = useState(false);
-    const [restoreResult, setRestoreResult] = useState<RestoreResult | null>(null);
-    const [restoreError, setRestoreError] = useState('');
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [manifest, setManifest] = useState<BackupManifest | null>(null);
-    const [showConfirm, setShowConfirm] = useState(false);
-    const [dragOver, setDragOver] = useState(false);
-    const fileRef = useRef<HTMLInputElement>(null);
+    const [backups, setBackups] = useState<BackupItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [processMessage, setProcessMessage] = useState('');
 
-    const handleBackup = async () => {
-        setIsBackingUp(true);
-        setBackupSuccess(false);
+    useEffect(() => {
+        fetchBackups();
+    }, []);
+
+    const fetchBackups = async (silent = false) => {
+        if (!silent) setIsLoading(true);
         try {
-            const response = await api.get('/backup/download', {
-                responseType: 'blob',
-            });
-
-            // Create download link
-            const blob = new Blob([response.data], { type: 'application/zip' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-
-            // Extract filename from header or generate
-            const contentDisposition = response.headers['content-disposition'];
-            let filename = `nulumbung_backup_${new Date().toISOString().slice(0, 19).replace(/[T:]/g, '_')}.zip`;
-            if (contentDisposition) {
-                const match = contentDisposition.match(/filename="?(.+)"?/);
-                if (match) filename = match[1];
-            }
-
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-
-            setBackupSuccess(true);
-            setTimeout(() => setBackupSuccess(false), 8000);
+            const data = await backupService.getBackups();
+            setBackups(data);
         } catch (error) {
-            console.error('Backup failed', error);
-            alert('Gagal membuat backup. Silakan coba lagi.');
+            console.error('Failed to fetch backups', error);
+            toast.error('Gagal memuat daftar backup.');
         } finally {
-            setIsBackingUp(false);
+            setIsLoading(false);
         }
     };
 
-    const handleFileSelect = async (file: File) => {
-        if (!file.name.endsWith('.zip')) {
-            alert('Hanya file ZIP yang diperbolehkan.');
+    const handleCreateBackup = async () => {
+        if (!confirm('Proses ini akan menjalankan backup database dan file platform. Anda yakin ingin melanjutkan?')) return;
+
+        setIsProcessing(true);
+        setProcessMessage('Sedang membuat backup (ini mungkin memakan waktu)...');
+        try {
+            await backupService.createBackup();
+            toast.success('Proses backup telah dimulai di latar belakang. Silakan refresh halaman setelah beberapa menit.');
+            setTimeout(() => fetchBackups(true), 5000); // give it some time
+        } catch (error: unknown) {
+            const apiError = error as { response?: { data?: { message?: string } } };
+            toast.error(apiError.response?.data?.message || 'Gagal membuat backup.');
+        } finally {
+            setIsProcessing(false);
+            setProcessMessage('');
+        }
+    };
+
+    const handleDelete = async (fileName: string) => {
+        if (!confirm(`Hapus backup ${fileName} secara permanen?`)) return;
+
+        setIsProcessing(true);
+        setProcessMessage('Menghapus backup...');
+        try {
+            await backupService.deleteBackup(fileName);
+            toast.success('Backup berhasil dihapus.');
+            fetchBackups(true);
+        } catch {
+            toast.error('Gagal menghapus backup.');
+        } finally {
+            setIsProcessing(false);
+            setProcessMessage('');
+        }
+    };
+
+    const handleRestoreServer = async (fileName: string) => {
+        if (!confirm(`TIDAK BISA DIBATALKAN! Anda yakin ingin merestore sistem menggunakan ${fileName}? Seluruh data saat ini akan ditimpa dengan data dari backup ini.`)) return;
+
+        setIsProcessing(true);
+        setProcessMessage(`Sedang merestore dari ${fileName}... Mohon jangan tutup halaman ini.`);
+        try {
+            const res = await backupService.restoreBackup(fileName);
+            toast.success(res.message);
+            // Wait a bit before reloading the page to show the toast
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
+        } catch (error: unknown) {
+            const apiError = error as { response?: { data?: { message?: string } } };
+            toast.error(apiError.response?.data?.message || 'Gagal merestore sistem.');
+            setIsProcessing(false);
+            setProcessMessage('');
+        }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!confirm(`TIDAK BISA DIBATALKAN! Anda yakin ingin merestore sistem menggunakan file ${file.name}?`)) {
+            e.target.value = '';
             return;
         }
 
-        setSelectedFile(file);
-        setManifest(null);
-        setRestoreResult(null);
-        setRestoreError('');
-        setIsPreviewing(true);
-
+        setIsProcessing(true);
+        setProcessMessage(`Mengupload dan merestore dari ${file.name}... Mohon jangan tutup halaman ini.`);
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const response = await api.post('/backup/preview', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-
-            setManifest(response.data);
+            const res = await backupService.restoreBackup(undefined, file);
+            toast.success(res.message);
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
         } catch (error: unknown) {
-            const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message
-                || 'File tidak valid.';
-            setRestoreError(message);
-            setSelectedFile(null);
+            const apiError = error as { response?: { data?: { message?: string } } };
+            toast.error(apiError.response?.data?.message || 'Gagal merestore sistem dari file.');
+            setIsProcessing(false);
+            setProcessMessage('');
         } finally {
-            setIsPreviewing(false);
+            e.target.value = '';
         }
-    };
-
-    const handleRestore = async () => {
-        if (!selectedFile) return;
-
-        setShowConfirm(false);
-        setIsRestoring(true);
-        setRestoreResult(null);
-        setRestoreError('');
-
-        try {
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-
-            const response = await api.post('/backup/restore', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                timeout: 300000, // 5 minute timeout for large backups
-            });
-
-            setRestoreResult(response.data);
-            setSelectedFile(null);
-            setManifest(null);
-        } catch (error: unknown) {
-            const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message
-                || 'Gagal melakukan restore.';
-            setRestoreError(message);
-        } finally {
-            setIsRestoring(false);
-        }
-    };
-
-    const clearFile = () => {
-        setSelectedFile(null);
-        setManifest(null);
-        setRestoreError('');
-        setRestoreResult(null);
-        if (fileRef.current) fileRef.current.value = '';
-    };
-
-    const totalRecords = manifest ? Object.values(manifest.tables).reduce((a, b) => a + b, 0) : 0;
-
-    const formatDate = (iso: string) => {
-        try {
-            return new Date(iso).toLocaleString('id-ID', {
-                day: 'numeric', month: 'long', year: 'numeric',
-                hour: '2-digit', minute: '2-digit',
-            });
-        } catch {
-            return iso;
-        }
-    };
-
-    const formatFileSize = (bytes: number) => {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     };
 
     return (
-        <div className="max-w-4xl mx-auto">
-            {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <HardDrive className="w-7 h-7 text-green-600" />
-                    Backup & Restore
-                </h1>
-                <p className="text-gray-500 text-sm mt-1">
-                    Backup seluruh data (database + file upload) dan restore dari file backup.
-                </p>
-            </div>
+        <div>
+            <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Sistem Backup & Restore</h1>
+                    <p className="text-gray-500 text-sm mt-1">Kelola cadangan data platform (Database & File Uploads).</p>
+                </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* === BACKUP CARD === */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-5">
-                        <div className="flex items-center gap-3 text-white">
-                            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                                <Download className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h2 className="font-bold text-lg">Backup Data</h2>
-                                <p className="text-green-100 text-xs">Download backup lengkap sebagai ZIP</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="p-6">
-                        <div className="space-y-3 mb-6">
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                                <Database className="w-4 h-4 text-green-500 flex-shrink-0" />
-                                <span>Semua tabel database (users, posts, categories, dll.)</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                                <Image className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                                <span>Semua file gambar yang telah diupload</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                                <Shield className="w-4 h-4 text-purple-500 flex-shrink-0" />
-                                <span>Roles, permissions, dan konfigurasi sistem</span>
-                            </div>
-                        </div>
-
+                <div className="flex gap-3">
+                    {/* Hidden File Input UI */}
+                    <div className="relative">
+                        <input
+                            type="file"
+                            accept=".zip"
+                            onChange={handleFileUpload}
+                            disabled={isProcessing}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                            title="Upload File Backup (.zip)"
+                        />
                         <button
-                            onClick={handleBackup}
-                            disabled={isBackingUp}
-                            className="w-full bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm hover:shadow-md"
+                            disabled={isProcessing}
+                            className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 h-[42px]"
                         >
-                            {isBackingUp ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Membuat Backup...
-                                </>
-                            ) : (
-                                <>
-                                    <Download className="w-5 h-5" />
-                                    Download Backup
-                                </>
-                            )}
+                            <UploadCloud className="w-4 h-4" />
+                            Upload & Restore
                         </button>
-
-                        {backupSuccess && (
-                            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-                                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                <p className="text-sm text-green-700 font-medium">Backup berhasil didownload!</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* === RESTORE CARD === */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5">
-                        <div className="flex items-center gap-3 text-white">
-                            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                                <Upload className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h2 className="font-bold text-lg">Restore Data</h2>
-                                <p className="text-amber-100 text-xs">Upload file backup ZIP untuk restore</p>
-                            </div>
-                        </div>
                     </div>
 
-                    <div className="p-6">
-                        {/* File Drop Zone */}
-                        {!selectedFile && !restoreResult && (
-                            <div
-                                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${dragOver
-                                        ? 'border-amber-400 bg-amber-50'
-                                        : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/50'
-                                    }`}
-                                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                                onDragLeave={() => setDragOver(false)}
-                                onDrop={(e) => {
-                                    e.preventDefault();
-                                    setDragOver(false);
-                                    const file = e.dataTransfer.files[0];
-                                    if (file) handleFileSelect(file);
-                                }}
-                                onClick={() => fileRef.current?.click()}
-                            >
-                                <input
-                                    ref={fileRef}
-                                    type="file"
-                                    accept=".zip"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) handleFileSelect(file);
-                                    }}
-                                />
-                                <UploadCloud className={`w-10 h-10 mx-auto mb-3 ${dragOver ? 'text-amber-500' : 'text-gray-300'}`} />
-                                <p className="text-sm font-medium text-gray-700">
-                                    {dragOver ? 'Lepaskan file di sini...' : 'Drag & drop file backup ZIP'}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1">atau klik untuk memilih file</p>
-                            </div>
-                        )}
+                    <button
+                        onClick={() => fetchBackups()}
+                        disabled={isLoading || isProcessing}
+                        className="flex items-center justify-center p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 h-[42px] w-[42px]"
+                        title="Refresh"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    </button>
 
-                        {/* Preview Loading */}
-                        {isPreviewing && (
-                            <div className="flex items-center justify-center py-8">
-                                <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
-                                <span className="ml-2 text-sm text-gray-500">Membaca file backup...</span>
-                            </div>
-                        )}
-
-                        {/* Error */}
-                        {restoreError && (
-                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-                                <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-                                <div>
-                                    <p className="text-sm font-medium text-red-700">{restoreError}</p>
-                                    <button
-                                        onClick={clearFile}
-                                        className="text-xs text-red-600 underline mt-1"
-                                    >
-                                        Coba lagi
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Manifest Preview */}
-                        {manifest && selectedFile && !isRestoring && !restoreResult && (
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <FileArchive className="w-5 h-5 text-amber-500" />
-                                        <div>
-                                            <p className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{selectedFile.name}</p>
-                                            <p className="text-xs text-gray-400">{formatFileSize(selectedFile.size)}</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={clearFile} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-                                        <X className="w-4 h-4 text-gray-400" />
-                                    </button>
-                                </div>
-
-                                {/* Backup Info */}
-                                <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                                        <Calendar className="w-3 h-3" />
-                                        <span>Dibuat: <strong className="text-gray-700">{formatDate(manifest.created_at)}</strong></span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                                        <User className="w-3 h-3" />
-                                        <span>Oleh: <strong className="text-gray-700">{manifest.created_by}</strong></span>
-                                    </div>
-                                </div>
-
-                                {/* Tables Summary */}
-                                <div className="border border-gray-100 rounded-xl overflow-hidden">
-                                    <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                            Data yang akan di-restore
-                                        </p>
-                                    </div>
-                                    <div className="divide-y divide-gray-50 max-h-48 overflow-y-auto">
-                                        {Object.entries(manifest.tables).filter(([, count]) => count > 0).map(([table, count]) => (
-                                            <div key={table} className="flex items-center justify-between px-4 py-2">
-                                                <span className="text-sm text-gray-700">{table}</span>
-                                                <span className="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-0.5 rounded">{count} rows</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-                                        <span className="text-xs font-semibold text-gray-600">Total</span>
-                                        <span className="text-xs font-bold text-gray-700">{totalRecords} records • {manifest.files_count} files</span>
-                                    </div>
-                                </div>
-
-                                {/* Warning */}
-                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
-                                    <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                                    <p className="text-xs text-red-700">
-                                        <strong>Peringatan:</strong> Restore akan <strong>menimpa semua data yang ada</strong>. Pastikan Anda sudah membuat backup terlebih dahulu sebelum melanjutkan.
-                                    </p>
-                                </div>
-
-                                {/* Restore Button */}
-                                {!showConfirm ? (
-                                    <button
-                                        onClick={() => setShowConfirm(true)}
-                                        className="w-full bg-amber-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-amber-600 transition-all flex items-center justify-center gap-2 shadow-sm"
-                                    >
-                                        <Upload className="w-5 h-5" />
-                                        Restore Data
-                                    </button>
-                                ) : (
-                                    <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
-                                        <p className="text-sm font-bold text-red-800 text-center">
-                                            Yakin ingin melakukan restore?
-                                        </p>
-                                        <p className="text-xs text-red-600 text-center">Semua data saat ini akan diganti dengan data dari file backup.</p>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => setShowConfirm(false)}
-                                                className="flex-1 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                                            >
-                                                Batal
-                                            </button>
-                                            <button
-                                                onClick={handleRestore}
-                                                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
-                                            >
-                                                Ya, Restore Sekarang
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Restoring Progress */}
-                        {isRestoring && (
-                            <div className="text-center py-8">
-                                <Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto mb-3" />
-                                <p className="text-sm font-semibold text-gray-700">Sedang melakukan restore...</p>
-                                <p className="text-xs text-gray-400 mt-1">Proses ini mungkin memakan waktu beberapa menit.</p>
-                            </div>
-                        )}
-
-                        {/* Restore Success */}
-                        {restoreResult && (
-                            <div className="space-y-4">
-                                <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600" />
-                                        <p className="text-sm font-bold text-green-700">Restore Berhasil!</p>
-                                    </div>
-                                    <div className="space-y-1 ml-7">
-                                        <p className="text-xs text-green-600">
-                                            {restoreResult.details.tables_restored} tabel berhasil di-restore
-                                        </p>
-                                        <p className="text-xs text-green-600">
-                                            {restoreResult.details.files_restored} file berhasil di-restore
-                                        </p>
-                                        {restoreResult.details.backup_date && (
-                                            <p className="text-xs text-green-600">
-                                                Dari backup: {formatDate(restoreResult.details.backup_date)}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={clearFile}
-                                    className="w-full px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                                >
-                                    Selesai
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    <button
+                        onClick={handleCreateBackup}
+                        disabled={isProcessing}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 h-[42px]"
+                    >
+                        <HardDriveUpload className="w-4 h-4" />
+                        Buat Backup Baru
+                    </button>
                 </div>
             </div>
 
-            {/* Info Section */}
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-                <Database className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                <div className="text-xs text-blue-700 space-y-1">
-                    <p className="font-semibold">Informasi Backup</p>
-                    <p>• File backup berformat ZIP yang berisi data database (JSON) dan file upload.</p>
-                    <p>• Backup menyimpan semua data: pengguna, berita, kategori, agenda, banom, multimedia, sejarah, iklan, newsletter, live stream, komentar, roles, permissions, dan pengaturan.</p>
-                    <p>• Disarankan untuk membuat backup secara berkala dan menyimpannya di lokasi yang aman.</p>
+            {isProcessing && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 flex items-center gap-3 text-yellow-800">
+                    <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" />
+                    <p className="text-sm font-medium">{processMessage}</p>
                 </div>
+            )}
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+                    </div>
+                ) : backups.length === 0 ? (
+                    <div className="text-center py-16">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FileArchive className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">Belum Ada Backup</h3>
+                        <p className="text-gray-500 text-sm">Klik tombol &quot;Buat Backup Baru&quot; untuk membackup sistem Anda.</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th className="px-6 py-4 font-semibold text-gray-900">Nama File</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-900">Ukuran</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-900">Tanggal Dibuat</th>
+                                    <th className="px-6 py-4 font-semibold text-gray-900 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {backups.map((backup) => (
+                                    <tr key={backup.file_name} className="hover:bg-gray-50 transition-colors group">
+                                        <td className="px-6 py-4 font-medium text-gray-900 flex items-center gap-2">
+                                            <FileArchive className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                            {backup.file_name}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                                {backup.file_size}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600">
+                                            {format(new Date(backup.created_at), 'dd MMMM yyyy HH:mm:ss', { locale: id })}
+                                        </td>
+                                        <td className="px-6 py-4 text-right space-x-2">
+                                            <a
+                                                href={backupService.getDownloadUrl(backup.file_name)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={`inline-flex items-center p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors ${isProcessing ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                                                title="Download"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                            </a>
+                                            <button
+                                                onClick={() => handleRestoreServer(backup.file_name)}
+                                                disabled={isProcessing}
+                                                className="inline-flex items-center p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50"
+                                                title="Restore Sistem dengan Backup ini"
+                                            >
+                                                <RefreshCw className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(backup.file_name)}
+                                                disabled={isProcessing}
+                                                className="inline-flex items-center p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                                title="Hapus"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );

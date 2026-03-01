@@ -13,16 +13,15 @@ import {
   ThumbsDown,
   ThumbsUp,
   Users,
+  RefreshCcw,
 } from 'lucide-react';
-import { useAuth } from '@/components/auth/auth-context';
+import { useAuth, api } from '@/components/auth/auth-context';
 import { LoginModal } from '@/components/auth/login-modal';
 import { CommentSection } from '@/components/comments/comment-section';
+import { createLiveStreamService } from '@/lib/services/live-stream.service';
 import {
-  getChannelDetails,
-  getLiveChatMessages,
   getMySubscription,
   getMyVideoRating,
-  getVideoDetails,
   rateVideo,
   subscribeToChannel,
   unsubscribeFromChannel,
@@ -74,6 +73,8 @@ declare global {
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const GOOGLE_SCRIPT_ID = 'google-identity-services-script';
 const YOUTUBE_SCOPE = 'https://www.googleapis.com/auth/youtube.force-ssl';
+
+const liveStreamService = createLiveStreamService(api);
 
 const toNumber = (value?: string | number | null) => {
   if (typeof value === 'number') return value;
@@ -157,10 +158,12 @@ export default function LiveStreamPage() {
   const watchUrl = useMemo(() => getWatchUrl(videoId), [videoId]);
 
   const mainStreamTitle = videoDetails?.title || currentStream?.title || 'Siaran Langsung Nulumbung';
-  const mainStreamer = videoDetails?.channelTitle || currentStream?.channel_name || 'Official Channel';
+  const mainStreamer = videoDetails?.channel_name || currentStream?.channel_name || 'Official Channel';
   const mainStreamAvatar =
     channelDetails?.thumbnails.default.url ||
-    `https://img.youtube.com/vi/${videoId}/default.jpg`;
+    (videoId && !videoId.startsWith('UC')
+      ? `https://img.youtube.com/vi/${videoId}/default.jpg`
+      : '/images/default-avatar.png');
   const mainStreamSubscribers = channelDetails?.statistics.hiddenSubscriberCount
     ? 'Subscriber disembunyikan'
     : `${formatCount(channelDetails?.statistics.subscriberCount)} subscribers`;
@@ -223,8 +226,8 @@ export default function LiveStreamPage() {
               reject(
                 new Error(
                   response.error_description ||
-                    response.error ||
-                    'Gagal mendapatkan token YouTube.'
+                  response.error ||
+                  'Gagal mendapatkan token YouTube.'
                 )
               );
               return;
@@ -262,7 +265,8 @@ export default function LiveStreamPage() {
 
   const refreshLiveData = useCallback(async () => {
     try {
-      const latestVideo = await getVideoDetails(videoId);
+      // Use backend proxy instead of direct lib/youtube call
+      const latestVideo = await liveStreamService.getProxyVideoDetails(videoId);
       if (!latestVideo) {
         setDataError('Data video live tidak ditemukan di YouTube.');
         return;
@@ -270,14 +274,22 @@ export default function LiveStreamPage() {
 
       setDataError('');
       setVideoDetails(latestVideo);
+
+      // If the backend resolved a Channel ID to a new Video ID, update state
+      if (latestVideo.youtube_id && latestVideo.youtube_id !== videoId) {
+        console.log(`Resolving ID: ${videoId} -> ${latestVideo.youtube_id}`);
+        setVideoId(latestVideo.youtube_id);
+      }
+
       setLiveLikeCount(toNumber(latestVideo.likeCount));
-      setLiveViewCount(toNumber(latestVideo.viewCount));
+      setLiveViewCount(toNumber(latestVideo.view_count || latestVideo.viewCount));
       setLiveConcurrentViewers(
         latestVideo.concurrentViewers ? toNumber(latestVideo.concurrentViewers) : null
       );
 
       if (latestVideo.channelId) {
-        const latestChannel = await getChannelDetails(latestVideo.channelId);
+        // Use backend proxy instead of direct lib/youtube call
+        const latestChannel = await liveStreamService.getProxyChannelDetails(latestVideo.channelId);
         setChannelDetails(latestChannel);
       } else {
         setChannelDetails(null);
@@ -290,11 +302,28 @@ export default function LiveStreamPage() {
 
       activeLiveChatIdRef.current = latestVideo.activeLiveChatId;
       setChatStatus(latestVideo.activeLiveChatId ? 'loading' : 'unavailable');
-    } catch (error) {
-      console.error('Failed to refresh live data:', error);
-      setDataError(getErrorMessage(error, 'Gagal mengambil data live YouTube.'));
+    } catch (error: unknown) {
+      const apiError = error as { response?: { status?: number } };
+      if (apiError?.response?.status === 404) {
+        setVideoDetails(null);
+        setChatStatus('unavailable');
+        setDataError('Belum ada siaran aktif di channel ini.');
+      } else {
+        console.error('Failed to refresh live data:', error);
+        setDataError(getErrorMessage(error, 'Gagal mengambil data live YouTube.'));
+      }
+    } finally {
+      setIsLoadingAction(null);
     }
   }, [videoId]);
+
+  const handleManualRefresh = async () => {
+    setIsLoadingAction('like'); // Reusing loading state for visual feedback
+    await refreshLiveData();
+    setIsLoadingAction(null);
+    setActionMessage('Data diperbarui dari YouTube.');
+    setTimeout(() => setActionMessage(''), 3000);
+  };
 
   useEffect(() => {
     setIsHydrated(true);
@@ -362,7 +391,8 @@ export default function LiveStreamPage() {
       }
 
       try {
-        const chatData = await getLiveChatMessages(liveChatId, nextPageTokenRef.current);
+        // Use backend proxy instead of direct lib/youtube call
+        const chatData = await liveStreamService.getProxyLiveChat(liveChatId, nextPageTokenRef.current);
 
         if (!chatData) {
           setChatStatus('empty');
@@ -375,7 +405,7 @@ export default function LiveStreamPage() {
         let hasMessages = false;
         setChatMessages((prev) => {
           const messageMap = new Map(prev.map((msg) => [msg.id, msg]));
-          chatData.messages.forEach((msg) => messageMap.set(msg.id, msg));
+          chatData.messages.forEach((msg: YouTubeChatMessage) => messageMap.set(msg.id, msg));
           const merged = Array.from(messageMap.values()).sort(
             (a, b) =>
               new Date(a.snippet.publishedAt).getTime() -
@@ -457,7 +487,8 @@ export default function LiveStreamPage() {
       }
 
       if (videoDetails.channelId) {
-        const latestChannel = await getChannelDetails(videoDetails.channelId);
+        // Use backend proxy instead of direct lib/youtube call
+        const latestChannel = await liveStreamService.getProxyChannelDetails(videoDetails.channelId);
         if (latestChannel) {
           setChannelDetails(latestChannel);
         }
@@ -566,9 +597,8 @@ Data live saat ini:
       {isBlocked && <div className="absolute inset-0 z-40 bg-background/80 backdrop-blur-md" />}
 
       <div
-        className={`bg-black/95 text-white transition-opacity duration-500 ${
-          !canAccessLive ? 'opacity-20 pointer-events-none' : 'opacity-100'
-        }`}
+        className={`bg-black/95 text-white transition-opacity duration-500 ${!canAccessLive ? 'opacity-20 pointer-events-none' : 'opacity-100'
+          }`}
       >
         <div className="container mx-auto px-4 py-6 lg:py-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
@@ -606,11 +636,10 @@ Data live saat ini:
                       type="button"
                       onClick={handleSubscribeToggle}
                       disabled={isLoadingAction === 'subscribe'}
-                      className={`ml-2 text-xs font-bold px-4 py-1.5 rounded-full transition-colors disabled:opacity-60 ${
-                        isSubscribed
-                          ? 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
-                          : 'bg-white text-black hover:bg-gray-200'
-                      }`}
+                      className={`ml-2 text-xs font-bold px-4 py-1.5 rounded-full transition-colors disabled:opacity-60 ${isSubscribed
+                        ? 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
+                        : 'bg-white text-black hover:bg-gray-200'
+                        }`}
                     >
                       {isLoadingAction === 'subscribe' ? (
                         <span className="inline-flex items-center gap-1">
@@ -635,11 +664,10 @@ Data live saat ini:
                       type="button"
                       onClick={() => handleRateVideo('like')}
                       disabled={isLoadingAction === 'like'}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors disabled:opacity-60 ${
-                        videoRating === 'like'
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-white/10 hover:bg-white/20'
-                      }`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors disabled:opacity-60 ${videoRating === 'like'
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-white/10 hover:bg-white/20'
+                        }`}
                     >
                       {isLoadingAction === 'like' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -653,11 +681,10 @@ Data live saat ini:
                       type="button"
                       onClick={() => handleRateVideo('dislike')}
                       disabled={isLoadingAction === 'dislike'}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors disabled:opacity-60 ${
-                        videoRating === 'dislike'
-                          ? 'bg-red-500 text-white'
-                          : 'bg-white/10 hover:bg-white/20'
-                      }`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors disabled:opacity-60 ${videoRating === 'dislike'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-white/10 hover:bg-white/20'
+                        }`}
                     >
                       {isLoadingAction === 'dislike' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -690,6 +717,17 @@ Data live saat ini:
                       <ExternalLink className="w-4 h-4" />
                       YouTube
                     </a>
+
+                    <button
+                      type="button"
+                      onClick={handleManualRefresh}
+                      disabled={isLoadingAction !== null}
+                      title="Perbarui data dari YouTube"
+                      className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      <RefreshCcw className={`w-4 h-4 ${isLoadingAction === 'like' ? 'animate-spin' : ''}`} />
+                      Refresh Data
+                    </button>
                   </div>
                 </div>
 
@@ -769,13 +807,12 @@ Data live saat ini:
                     </div>
                     <div>
                       <span
-                        className={`font-bold mr-2 ${
-                          msg.authorDetails.isChatModerator
-                            ? 'text-accent'
-                            : msg.authorDetails.isChatOwner
+                        className={`font-bold mr-2 ${msg.authorDetails.isChatModerator
+                          ? 'text-accent'
+                          : msg.authorDetails.isChatOwner
                             ? 'text-yellow-400'
                             : 'text-gray-300'
-                        }`}
+                          }`}
                       >
                         {msg.authorDetails.displayName}
                       </span>
@@ -811,7 +848,7 @@ Data live saat ini:
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {otherStreams.map((stream) => (
+          {otherStreams.map((stream) => (
             <div
               key={stream.id}
               className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all"

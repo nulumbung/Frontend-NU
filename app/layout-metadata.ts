@@ -1,7 +1,6 @@
 // This file is for server-side metadata only
 import type { Metadata, Viewport } from "next";
 import { createDefaultMetadata } from "@/lib/seo/metadata";
-import { getSiteUrl } from "@/lib/seo/server";
 
 export const metadata: Metadata = createDefaultMetadata();
 

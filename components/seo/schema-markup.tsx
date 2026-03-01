@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 
 export interface SchemaMarkupProps {
-  schema: Record<string, any>;
+  schema: Record<string, unknown>;
   id?: string;
 }
 
@@ -75,22 +75,22 @@ export function NewsArticleSchema({
     dateModified,
     author: author
       ? {
-          '@type': 'Person',
-          name: author,
-        }
+        '@type': 'Person',
+        name: author,
+      }
       : {
-          '@type': 'Organization',
-          name: 'NU Lumbung',
-        },
+        '@type': 'Organization',
+        name: 'NU Lumbung',
+      },
     publisher: {
       '@type': 'Organization',
       name: publisher || 'NU Lumbung',
     },
     mainEntityOfPage: mainEntityOfPage
       ? {
-          '@type': 'WebPage',
-          '@id': mainEntityOfPage,
-        }
+        '@type': 'WebPage',
+        '@id': mainEntityOfPage,
+      }
       : undefined,
   };
 
@@ -124,22 +124,22 @@ export function ArticleSchema({
     dateModified,
     author: author
       ? {
-          '@type': 'Person',
-          name: author,
-        }
+        '@type': 'Person',
+        name: author,
+      }
       : {
-          '@type': 'Organization',
-          name: 'NU Lumbung',
-        },
+        '@type': 'Organization',
+        name: 'NU Lumbung',
+      },
     publisher: {
       '@type': 'Organization',
       name: 'NU Lumbung',
     },
     mainEntityOfPage: mainEntityOfPage
       ? {
-          '@type': 'WebPage',
-          '@id': mainEntityOfPage,
-        }
+        '@type': 'WebPage',
+        '@id': mainEntityOfPage,
+      }
       : undefined,
   };
 
@@ -216,9 +216,9 @@ export function OrganizationSchema({
     sameAs: sameAs || [],
     contactPoint: contactPoint
       ? {
-          '@type': 'ContactPoint',
-          ...contactPoint,
-        }
+        '@type': 'ContactPoint',
+        ...contactPoint,
+      }
       : undefined,
   };
 

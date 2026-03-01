@@ -16,52 +16,51 @@ const isValidFaviconUrl = (value: string) => {
 };
 
 const upsertMetaTag = (name: string, content: string) => {
-  let tag = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
-  if (!tag) {
-    tag = document.createElement('meta');
+  // Use querySelectorAll to handle duplicates and update all of them
+  const tags = document.querySelectorAll(`meta[name="${name}"]`);
+
+  if (tags.length > 0) {
+    tags.forEach(tag => {
+      if (tag.getAttribute('content') !== content) {
+        tag.setAttribute('content', content);
+      }
+    });
+  } else {
+    const tag = document.createElement('meta');
     tag.setAttribute('name', name);
+    tag.setAttribute('content', content);
+    tag.setAttribute(MANAGED_ATTR, 'true');
     document.head.appendChild(tag);
   }
-  tag.setAttribute('content', content);
 };
 
 /**
- * Force-update all favicon link elements in the document head.
- *
- * Browsers aggressively cache favicons, so simply changing `href` on an existing
- * `<link>` element often has no visible effect.  The most reliable cross-browser
- * approach is to:
- *   1. Remove every existing icon `<link>`.
- *   2. Append brand-new `<link>` elements with a cache-busting query string.
+ * Sync favicon links non-destructively.
  */
 const syncIconLinks = (href: string) => {
-  // Append a unique timestamp to bust the browser cache
   const bustUrl = href.includes('?')
     ? `${href}&_t=${Date.now()}`
     : `${href}?_t=${Date.now()}`;
 
-  // 1. Remove ALL existing icon links
-  document
-    .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]')
-    .forEach((el) => el.remove());
+  const rels = ['icon', 'shortcut icon', 'apple-touch-icon'];
 
-  // 2. Create new links
-  const createLink = (rel: string, sizes?: string) => {
-    const link = document.createElement('link');
-    link.rel = rel;
-    link.href = bustUrl;
-    if (sizes) link.setAttribute('sizes', sizes);
-    link.setAttribute(MANAGED_ATTR, 'true');
-    document.head.appendChild(link);
-  };
+  rels.forEach(rel => {
+    const links = document.querySelectorAll(`link[rel="${rel}"]`);
 
-  // Standard icon – no size constraint so the browser picks the best resolution
-  createLink('icon');
-  // Explicit large sizes to encourage hi-res rendering
-  createLink('icon', '192x192');
-  createLink('icon', '512x512');
-  // Apple touch icon (required for iOS home screen)
-  createLink('apple-touch-icon', '180x180');
+    if (links.length > 0) {
+      links.forEach(link => {
+        if (link.getAttribute('href') !== bustUrl) {
+          link.setAttribute('href', bustUrl);
+        }
+      });
+    } else {
+      const link = document.createElement('link');
+      link.rel = rel;
+      link.setAttribute('href', bustUrl);
+      link.setAttribute(MANAGED_ATTR, 'true');
+      document.head.appendChild(link);
+    }
+  });
 };
 
 export function SiteMetaSync() {

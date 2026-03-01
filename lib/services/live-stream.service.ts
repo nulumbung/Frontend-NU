@@ -1,4 +1,5 @@
 import { AxiosInstance } from 'axios';
+import type { YouTubeVideoDetails, YouTubeChannelDetails, YouTubeChatMessage } from '../youtube';
 
 export interface LiveStream {
   id: number;
@@ -75,7 +76,7 @@ export const createLiveStreamService = (api: AxiosInstance) => ({
     try {
       const response = await api.get<LiveStreamResponse>('/live-streams/active');
       const data = response.data;
-      
+
       // Handle both single object and data wrapper
       if (Array.isArray(data.data)) {
         return data.data[0] || null;
@@ -94,7 +95,7 @@ export const createLiveStreamService = (api: AxiosInstance) => ({
     try {
       const response = await api.get<LiveStreamResponse>(`/live-streams/${id}`);
       const data = response.data;
-      
+
       if (Array.isArray(data.data)) {
         return data.data[0] as LiveStream;
       }
@@ -114,7 +115,7 @@ export const createLiveStreamService = (api: AxiosInstance) => ({
     try {
       const response = await api.post<LiveStreamResponse>('/live-streams', payload);
       const data = response.data;
-      
+
       if (Array.isArray(data.data)) {
         return data.data[0] as LiveStream;
       }
@@ -139,7 +140,7 @@ export const createLiveStreamService = (api: AxiosInstance) => ({
         payload
       );
       const data = response.data;
-      
+
       if (Array.isArray(data.data)) {
         return data.data[0] as LiveStream;
       }
@@ -179,7 +180,7 @@ export const createLiveStreamService = (api: AxiosInstance) => ({
         `/live-streams/${id}/refresh`
       );
       const data = response.data;
-      
+
       if (Array.isArray(data.data)) {
         return data.data[0] as LiveStream;
       }
@@ -192,6 +193,82 @@ export const createLiveStreamService = (api: AxiosInstance) => ({
           : `Failed to refresh data from YouTube`
       );
     }
+  },
+
+  /**
+   * Fetch active live stream from a channel ID
+   */
+  async fetchFromChannel(channelId: string): Promise<LiveStream> {
+    try {
+      const response = await api.get<LiveStream>(`/live-streams/from-channel/${channelId}`);
+      return response.data;
+    } catch (error: unknown) {
+      console.error(`Failed to fetch from channel ${channelId}:`, error);
+      const apiError = error as { response?: { data?: { message?: string } } };
+      const serverMessage = apiError.response?.data?.message;
+      throw new Error(
+        serverMessage || (error instanceof Error
+          ? error.message
+          : `Gagal mengambil siaran dari channel tersebut`)
+      );
+    }
+  },
+
+  /**
+   * Proxy to get YouTube video details.
+   */
+  async getProxyVideoDetails(videoId: string): Promise<YouTubeVideoDetails> {
+    const response = await api.get(`/youtube/video/${videoId}`);
+    return response.data;
+  },
+
+  /**
+   * Proxy to get YouTube channel details.
+   */
+  async getProxyChannelDetails(channelId: string): Promise<YouTubeChannelDetails> {
+    const response = await api.get(`/youtube/channel/${channelId}`);
+    return response.data;
+  },
+
+  /**
+   * Check YouTube OAuth status
+   */
+  async checkYoutubeStatus(): Promise<{ connected: boolean }> {
+    const response = await api.get('/youtube/auth/status');
+    return response.data;
+  },
+
+  /**
+   * Get YouTube OAuth Auth URL
+   */
+  async getYoutubeAuthUrl(): Promise<string> {
+    const response = await api.get('/youtube/auth/redirect');
+    return response.data?.url;
+  },
+
+  /**
+   * Disconnect YouTube OAuth
+   */
+  async disconnectYoutube(): Promise<void> {
+    await api.post('/youtube/auth/disconnect');
+  },
+
+  /**
+   * Get authenticated user's YouTube broadcasts
+   */
+  async getMyBroadcasts(): Promise<Array<{ id: string; snippet: { title: string; publishedAt: string; thumbnails: { default: { url: string } } }; status: { lifeCycleStatus: string } }>> {
+    const response = await api.get('/live-streams/my-broadcasts');
+    return response.data?.data || [];
+  },
+
+  /**
+   * Proxy to get YouTube live chat messages.
+   */
+  async getProxyLiveChat(liveChatId: string, pageToken?: string): Promise<{ nextPageToken?: string; pollingIntervalMillis?: number; messages: YouTubeChatMessage[] }> {
+    const response = await api.get(`/youtube/chat/${liveChatId}`, {
+      params: { pageToken }
+    });
+    return response.data;
   },
 });
 

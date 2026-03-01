@@ -25,10 +25,10 @@ export function VideoSection() {
   const fetchVideos = useCallback(async () => {
     try {
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 5000)
+        setTimeout(() => reject(new Error('Request timeout')), 15000)
       );
       const response = await Promise.race([api.get('/multimedia'), timeoutPromise]);
-      const rows: MultimediaItem[] = toArray<MultimediaItem>((response as any).data);
+      const rows: MultimediaItem[] = toArray<MultimediaItem>((response as { data?: unknown }).data);
       setItems(rows.filter((item) => item.type === 'video').slice(0, 4));
     } catch (error) {
       console.error('Failed to fetch multimedia for homepage:', error);

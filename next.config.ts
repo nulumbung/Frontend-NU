@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   // Performance optimizations
   compress: true,
   productionBrowserSourceMaps: false,
-  
+
   // Image optimization
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -86,7 +86,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.google-analytics.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.nulumbung.or.id https://www.google-analytics.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://www.google.com https://www.youtube.com; media-src 'self' https:; frame-src https://www.youtube.com; frame-ancestors 'none';"
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.google-analytics.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://cdn.tailwindcss.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; img-src 'self' data: https: http://localhost:8000 http://127.0.0.1:8000; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: wss: http://localhost:8000 http://127.0.0.1:8000 https://localhost:8000 https://127.0.0.1:8000 https://api.nulumbung.or.id https://www.google-analytics.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://www.google.com https://www.youtube.com https://accounts.google.com https://fonts.googleapis.com https://fonts.gstatic.com; media-src 'self' https: http://localhost:8000 http://127.0.0.1:8000; frame-src https://www.youtube.com https://accounts.google.com; frame-ancestors 'none';"
           },
           {
             key: 'Strict-Transport-Security',
@@ -129,22 +129,16 @@ const nextConfig: NextConfig = {
   },
 
   async rewrites() {
-    if (process.env.NODE_ENV === 'development') {
-      return [
-        {
-          source: '/api/:path*',
-          destination: 'http://localhost:8000/api/:path*',
-        },
-      ];
-    }
+    // Always proxy /api to the backend defined in .env
+    const destination = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+
     return [
       {
         source: '/api/:path*',
-        destination: 'https://api.nulumbung.or.id/api/:path*',
+        destination: `${destination}/api/:path*`,
       },
     ];
   },
-
   async redirects() {
     return [
       {

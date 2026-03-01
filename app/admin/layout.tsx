@@ -37,8 +37,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
+  console.log('[AdminLayout] Render', { isLoading, user: !!user, pathname });
+
   // Ensure component is mounted before rendering auth-dependent content
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 
@@ -66,10 +69,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close dropdown on navigation
-  useEffect(() => {
-    setIsProfileOpen(false);
-  }, [pathname]);
 
   if (pathname === '/admin/login') {
     return <>{children}</>;

@@ -51,6 +51,11 @@ export function CommentSection({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const targetId = useMemo(() => {
     if (target === null || target === undefined) return '';
@@ -107,9 +112,8 @@ export function CommentSection({
 
   return (
     <div
-      className={`rounded-2xl p-6 border ${
-        isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-card border-border'
-      }`}
+      className={`rounded-2xl p-6 border ${isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-card border-border'
+        }`}
     >
       <div className="flex items-center gap-2 mb-6">
         <MessageSquare className={`w-5 h-5 ${isDark ? 'text-accent' : 'text-accent'}`} />
@@ -133,9 +137,8 @@ export function CommentSection({
           comments.map((comment) => (
             <div
               key={comment.id}
-              className={`rounded-xl p-3 border ${
-                isDark ? 'bg-black/20 border-white/10' : 'bg-background border-border'
-              }`}
+              className={`rounded-xl p-3 border ${isDark ? 'bg-black/20 border-white/10' : 'bg-background border-border'
+                }`}
             >
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center text-xs font-semibold">
@@ -179,42 +182,47 @@ export function CommentSection({
         <textarea
           value={commentInput}
           onChange={(e) => setCommentInput(e.target.value)}
-          className={`w-full rounded-xl p-3 text-sm min-h-[100px] focus:outline-none ${
-            isDark
+          className={`w-full rounded-xl p-3 text-sm min-h-[100px] focus:outline-none ${isDark
               ? 'bg-black/30 border border-white/20 text-white placeholder:text-gray-400 focus:border-accent'
               : 'bg-background border border-border text-foreground placeholder:text-muted-foreground focus:border-accent'
-          }`}
-          placeholder={isPublicUser ? placeholder : 'Login akun user publik untuk menulis komentar...'}
-          disabled={isAuthLoading || !targetId}
+            }`}
+          placeholder={
+            !isMounted
+              ? 'Memuat...'
+              : isPublicUser
+                ? placeholder
+                : 'Login akun user publik untuk menulis komentar...'
+          }
+          disabled={!isMounted || isAuthLoading || !targetId}
         />
 
         <div className="flex justify-between items-center gap-3">
-          {!isPublicUser ? (
+          {!isMounted ? (
+            <span className="text-xs text-muted-foreground">Menyiapkan...</span>
+          ) : !isPublicUser ? (
             <button
               type="button"
               onClick={() => setShowLoginModal(true)}
-              className={`text-sm font-semibold px-4 py-2 rounded-full ${
-                isDark
+              className={`text-sm font-semibold px-4 py-2 rounded-full ${isDark
                   ? 'bg-white/10 text-white hover:bg-white/20'
                   : 'bg-muted text-foreground hover:bg-muted/80'
-              }`}
+                }`}
             >
               Login untuk Komentar
             </button>
           ) : (
             <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-muted-foreground'}`}>
-              Login sebagai {user.name}
+              Login sebagai {user?.name}
             </span>
           )}
 
           <button
             type="submit"
             disabled={isSubmitting || isAuthLoading || !targetId}
-            className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold disabled:opacity-60 ${
-              isDark
+            className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold disabled:opacity-60 ${isDark
                 ? 'bg-accent text-accent-foreground hover:bg-accent/90'
                 : 'bg-primary text-primary-foreground hover:bg-primary/90'
-            }`}
+              }`}
           >
             <Send className="w-4 h-4" />
             {isSubmitting ? 'Mengirim...' : 'Kirim Komentar'}

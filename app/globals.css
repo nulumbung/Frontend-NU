@@ -79,11 +79,11 @@
   --primary: #1B4332;
   --primary-foreground: #F0F4F8;
   
-  --secondary: #E8F5E9;
-  --secondary-foreground: #1B4332;
+  --secondary: #E0F2E9; /* Slightly darker light green for better contrast vs white if used as text, though mostly bg */
+  --secondary-foreground: #102A1F; /* Darker primary for contrast */
   
   --muted: #F1F5F9;
-  --muted-foreground: #64748B;
+  --muted-foreground: #475569; /* Darkened from 64748b to pass WCAG AA on white/muted */
   
   --accent: #D4AF37;
   --accent-foreground: #FFFFFF;
@@ -130,8 +130,8 @@
   --secondary: #2D6A4F;
   --secondary-foreground: #F0F4F8;
   
-  --muted: #8899AA;
-  --muted-foreground: #8899AA; 
+  --muted: #94A3B8;
+  --muted-foreground: #94A3B8; /* Lightened from 8899AA to pass WCAG AA on dark */
   
   --accent: #D4AF37;
   --accent-foreground: #050A0E;

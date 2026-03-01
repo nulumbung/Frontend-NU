@@ -1,8 +1,9 @@
 
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import axios from 'axios';
+import { SetPasswordModal } from './set-password-modal';
 
 interface User {
   id: number;
@@ -13,6 +14,7 @@ interface User {
   auth_provider?: string;
   last_login_at?: string | null;
   last_login_ip?: string | null;
+  needs_password?: boolean;
 }
 
 type AuthPortal = 'public' | 'admin';
@@ -43,20 +45,22 @@ const DEVICE_FINGERPRINT_KEY = 'device_fingerprint';
 // In production: NEXT_PUBLIC_API_URL should be set to https://api.nulumbung.or.id/api
 // In development: falls back to http://localhost:8000/api
 const getApiBaseUrl = () => {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  
-  // If explicitly set to an absolute URL, use it
-  if (envUrl && envUrl.startsWith('http')) {
-    return envUrl;
+  // Priority: Use full backend URL for direct API access (bypasses Next.js proxy limits)
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  // If we are on the SERVER SIDE (Node.js SSR), we MUST use the absolute URL.
+  // Relative URLs like '/api' will cause Axios Network Error because it lacks a host.
+  if (typeof window === 'undefined') {
+    return backendUrl ? `${backendUrl.replace(/\/$/, '')}/api` : 'http://127.0.0.1:8000/api';
   }
-  
-  // Local development fallback
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    return 'http://localhost:8000/api';
+
+  // If we are on the CLIENT SIDE, we should also prefer absolute to avoid proxy issues,
+  // but fallback to relative '/api' if NEXT_PUBLIC_BACKEND_URL is somehow missing.
+  if (backendUrl) {
+    return `${backendUrl.replace(/\/$/, '')}/api`;
   }
-  
-  // SSR or other cases
-  return envUrl || '/api';
+
+  return '/api';
 };
 
 // Axios instance with base URL
@@ -66,6 +70,16 @@ const api = axios.create({
     'Accept': 'application/json',
   },
 });
+
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+}, (error) => Promise.reject(error));
 
 const parseStoredUser = (): User | null => {
   if (typeof window === 'undefined') {
@@ -91,6 +105,8 @@ const getStoredToken = (): string | null => {
 };
 
 const setAuthHeader = (token?: string) => {
+  // Now handled primarily by the Axios interceptor
+  // But we can keep this for explicit state changes if needed
   if (!token) {
     delete api.defaults.headers.common['Authorization'];
     return;
@@ -136,8 +152,8 @@ const getDevicePayload = () => {
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => parseStoredUser());
-  const [isLoading, setIsLoading] = useState<boolean>(() => Boolean(getStoredToken()));
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const persistSession = (nextUser: User, token: string) => {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
@@ -155,8 +171,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const token = getStoredToken();
+    const storedUser = parseStoredUser();
+
     if (!token) {
+      setIsLoading(false);
       return;
+    }
+
+    // Set initial user from storage immediately on mount (safe for hydration now)
+    if (storedUser) {
+      setUser(storedUser);
     }
 
     setAuthHeader(token);
@@ -227,9 +251,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearSession();
   };
 
+  const authValue = useMemo(
+    () => ({ user, login, register, loginWithGoogle, logout, isLoading }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user, isLoading]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, login, register, loginWithGoogle, logout, isLoading }}>
+    <AuthContext.Provider value={authValue}>
       {children}
+
+      {/* Forced Password Setup for Google Users */}
+      {user?.needs_password && (
+        <SetPasswordModal
+          isOpen={true}
+          userEmail={user.email}
+          userName={user.name}
+          api={api}
+          onSuccess={() => {
+            // Update context to reflect password was set
+            setUser(prev => prev ? { ...prev, needs_password: false } : null);
+          }}
+        />
+      )}
     </AuthContext.Provider>
   );
 }

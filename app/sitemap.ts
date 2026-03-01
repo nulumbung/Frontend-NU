@@ -1,6 +1,5 @@
 import type { MetadataRoute } from 'next';
 import {
-  getSiteUrl,
   absoluteUrl,
   getBackendBaseUrl,
 } from '@/lib/seo/server';
@@ -88,17 +87,18 @@ export async function generateSitemaps() {
   return [{ id: '0' }, { id: '1' }, { id: '2' }, { id: '3' }];
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   // This is handled by Next.js automatically via sitemap.ts
   return new Response('Handled by Next.js');
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [...STATIC_ROUTES];
+  type APIData = { slug?: string; updated_at?: string; created_at?: string; date?: string; };
 
   try {
     // Fetch posts/berita
-    const posts = await fetchSitemapData<any>('/posts');
+    const posts = await fetchSitemapData<APIData>('/posts');
     posts.forEach((post) => {
       if (post.slug) {
         entries.push({
@@ -111,7 +111,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
 
     // Fetch categories
-    const categories = await fetchSitemapData<any>('/categories');
+    const categories = await fetchSitemapData<APIData>('/categories');
     categories.forEach((category) => {
       if (category.slug) {
         entries.push({
@@ -124,7 +124,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
 
     // Fetch agenda
-    const agendas = await fetchSitemapData<any>('/agendas');
+    const agendas = await fetchSitemapData<APIData>('/agendas');
     agendas.forEach((agenda) => {
       if (agenda.slug) {
         entries.push({
@@ -137,7 +137,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
 
     // Fetch banom
-    const banoms = await fetchSitemapData<any>('/banoms');
+    const banoms = await fetchSitemapData<APIData>('/banoms');
     banoms.forEach((banom) => {
       if (banom.slug) {
         entries.push({
@@ -150,7 +150,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
 
     // Fetch multimedia
-    const multimedia = await fetchSitemapData<any>('/multimedia');
+    const multimedia = await fetchSitemapData<APIData>('/multimedia');
     multimedia.forEach((item) => {
       if (item.slug) {
         entries.push({

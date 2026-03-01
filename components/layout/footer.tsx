@@ -39,11 +39,11 @@ const socialConfigs: Array<{
   color: string;
   icon: typeof Facebook;
 }> = [
-  { key: 'social_facebook', label: 'Facebook', color: 'hover:text-blue-500', icon: Facebook },
-  { key: 'social_twitter', label: 'Twitter', color: 'hover:text-sky-400', icon: Twitter },
-  { key: 'social_instagram', label: 'Instagram', color: 'hover:text-pink-500', icon: Instagram },
-  { key: 'social_youtube', label: 'YouTube', color: 'hover:text-red-500', icon: Youtube },
-];
+    { key: 'social_facebook', label: 'Facebook', color: 'hover:text-blue-500', icon: Facebook },
+    { key: 'social_twitter', label: 'Twitter', color: 'hover:text-sky-400', icon: Twitter },
+    { key: 'social_instagram', label: 'Instagram', color: 'hover:text-pink-500', icon: Instagram },
+    { key: 'social_youtube', label: 'YouTube', color: 'hover:text-red-500', icon: Youtube },
+  ];
 
 const isHttpUrl = (value?: string) => (value ? /^https?:\/\//i.test(value) : false);
 const asTrimmed = (value?: string) => (value || '').trim();
@@ -264,6 +264,7 @@ export function Footer() {
                   placeholder="Email Anda"
                   className="bg-background border border-border rounded-lg px-3 py-2 text-xs w-full focus:outline-none focus:border-accent"
                   disabled={isSubmittingNewsletter}
+                  aria-label="Email untuk berlangganan newsletter"
                 />
                 <button
                   type="submit"

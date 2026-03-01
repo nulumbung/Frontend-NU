@@ -15,11 +15,11 @@ interface NewsItem {
   image?: string | null;
   excerpt?: string | null;
   category: {
-      name: string;
+    name: string;
   } | null;
   author?: {
-      name?: string | null;
-      avatar?: string | null;
+    name?: string | null;
+    avatar?: string | null;
   } | null;
   created_at: string;
   read_time?: string | null;
@@ -54,13 +54,13 @@ export function HeroSection() {
       ]);
 
       const headlineRows =
-        headlineResult.status === 'fulfilled' ? toArray<NewsItem>((headlineResult.value as any).data) : [];
+        headlineResult.status === 'fulfilled' ? toArray<NewsItem>((headlineResult.value as { data?: unknown }).data) : [];
       const featuredRows =
-        featuredResult.status === 'fulfilled' ? toArray<NewsItem>((featuredResult.value as any).data) : [];
+        featuredResult.status === 'fulfilled' ? toArray<NewsItem>((featuredResult.value as { data?: unknown }).data) : [];
       const breakingRows =
-        breakingResult.status === 'fulfilled' ? toArray<NewsItem>((breakingResult.value as any).data) : [];
+        breakingResult.status === 'fulfilled' ? toArray<NewsItem>((breakingResult.value as { data?: unknown }).data) : [];
       const latestRows =
-        latestResult.status === 'fulfilled' ? toArray<NewsItem>((latestResult.value as any).data) : [];
+        latestResult.status === 'fulfilled' ? toArray<NewsItem>((latestResult.value as { data?: unknown }).data) : [];
 
       setHeadlineNews(headlineRows);
       setFeaturedNews(featuredRows);
@@ -76,51 +76,35 @@ export function HeroSection() {
   useEffect(() => {
     // Initial fetch
     const initialTimer = setTimeout(() => fetchNews(), 100); // Defer initial fetch slightly
-    
+
     // Polling interval
     const intervalId = window.setInterval(fetchNews, REFRESH_INTERVAL);
-    
+
     return () => {
       clearTimeout(initialTimer);
       clearInterval(intervalId);
     };
   }, [fetchNews]);
 
-  if (isLoading) {
-    return (
-      <section className="relative pt-6 pb-12 overflow-hidden min-h-[600px] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-      </section>
-    );
-  }
-
-  const primaryPool = useMemo(() => featuredNews.length > 0 ? featuredNews : latestNews, [featuredNews, latestNews]);
+  const primaryPool = useMemo(() => (featuredNews.length > 0 ? featuredNews : latestNews), [featuredNews, latestNews]);
   const mainNews = useMemo(() => headlineNews[0] || primaryPool[0], [headlineNews, primaryPool]);
-  
-  if (!mainNews) {
-    return (
-      <section className="relative pt-6 pb-12 overflow-hidden min-h-[360px] flex items-center justify-center">
-        <p className="text-muted-foreground">Belum ada berita untuk ditampilkan.</p>
-      </section>
-    );
-  }
 
-  const featuredUnique = useMemo(() => 
+  const featuredUnique = useMemo(() =>
     Array.from(new Map(featuredNews.map((item) => [item.id, item])).values()),
     [featuredNews]
   );
 
   const featuredSidePool = useMemo(() =>
-    featuredUnique.filter((item) => item.id !== mainNews.id).slice(0, 2), // Reduced from 3 to 2
+    featuredUnique.filter((item) => item.id !== mainNews?.id).slice(0, 2),
     [featuredUnique, mainNews]
   );
 
   const sideNews = useMemo(() =>
     featuredSidePool.length > 0
       ? featuredSidePool
-      : featuredUnique.some((item) => item.id === mainNews.id)
+      : (featuredUnique.some((item) => item.id === mainNews?.id) && mainNews
         ? [mainNews]
-        : [],
+        : []),
     [featuredSidePool, featuredUnique, mainNews]
   );
 
@@ -132,9 +116,25 @@ export function HeroSection() {
           .map((item) => (item.title || '').trim())
           .filter((title) => title.length > 0)
       )
-    ).slice(0, 6), // Reduced from 8 to 6
+    ).slice(0, 6),
     [tickerPool]
   );
+
+  if (isLoading) {
+    return (
+      <section className="relative pt-6 pb-12 overflow-hidden min-h-[600px] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </section>
+    );
+  }
+
+  if (!mainNews) {
+    return (
+      <section className="relative pt-6 pb-12 overflow-hidden min-h-[360px] flex items-center justify-center">
+        <p className="text-muted-foreground">Belum ada berita untuk ditampilkan.</p>
+      </section>
+    );
+  }
 
   const breakingTitles = tickerTitles.length > 0 ? tickerTitles : ['Belum ada breaking news'];
   const useTickerMarquee = breakingTitles.length > 1;
@@ -146,7 +146,7 @@ export function HeroSection() {
     <section className="relative pt-6 pb-12 overflow-hidden">
       {/* Background Elements - simplified for perf */}
       <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-primary/20 to-transparent opacity-50 pointer-events-none" />
-      
+
       <div className="container mx-auto px-4">
         {/* Breaking News Ticker */}
         <div className="mb-8 rounded-lg overflow-hidden border border-red-500/20 bg-red-950/30 flex items-center relative">
@@ -184,14 +184,14 @@ export function HeroSection() {
 
         {/* Hero Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+
           {/* Main Headline (Left - 8 cols) */}
           <div className="lg:col-span-8 group cursor-pointer relative min-h-[320px] md:min-h-[420px]">
             <Link href={`/berita/${mainNews.slug}`} className="block h-full min-h-[320px] md:min-h-[420px] relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
               {mainNews.image ? (
-                <Image 
-                  src={mainNews.image} 
+                <Image
+                  src={mainNews.image}
                   alt={mainTitle}
                   fill
                   priority
@@ -201,12 +201,12 @@ export function HeroSection() {
               ) : (
                 <div className="absolute inset-0 bg-secondary/40" />
               )}
-              
+
               <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 z-20">
                 {mainNews.category && (
-                    <span className="inline-block px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-bold tracking-wider mb-4 border border-accent-foreground/20 shadow-lg shadow-accent/20">
+                  <span className="inline-block px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-bold tracking-wider mb-4 border border-accent-foreground/20 shadow-lg shadow-accent/20">
                     {mainNews.category.name}
-                    </span>
+                  </span>
                 )}
                 <h1 className="font-serif text-2xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4 drop-shadow-lg group-hover:text-glow-gold transition-all">
                   {mainTitle}
@@ -214,16 +214,16 @@ export function HeroSection() {
                 <p className="text-gray-300 line-clamp-2 md:text-lg mb-6 max-w-2xl">
                   {mainNews.excerpt}
                 </p>
-                
+
                 <div className="flex items-center gap-4 text-sm text-gray-400">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden relative border border-white/20">
                       {mainNews.author?.avatar ? (
-                        <Image 
-                          src={mainNews.author.avatar} 
-                          alt={mainAuthorName || 'Penulis'} 
-                          fill 
-                          className="object-cover" 
+                        <Image
+                          src={mainNews.author.avatar}
+                          alt={mainAuthorName || 'Penulis'}
+                          fill
+                          className="object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">
@@ -254,20 +254,20 @@ export function HeroSection() {
                 Berita Pilihan
               </h2>
             </div>
-            
+
             <div className="flex flex-col gap-4 h-full">
               {sideNews.map((news, idx) => (
-                <Link 
-                  key={news.id} 
+                <Link
+                  key={news.id}
                   href={`/berita/${news.slug}`}
                   className="group relative glass-card rounded-xl p-3 flex gap-4 transition-all hover:-translate-y-1 hover:shadow-lg hover:border-accent/30 overflow-hidden"
                 >
                   <div className="w-24 h-24 flex-shrink-0 relative rounded-lg overflow-hidden bg-secondary/20">
                     {news.image ? (
-                      <Image 
-                        src={news.image} 
-                        alt={news.title} 
-                        fill 
+                      <Image
+                        src={news.image}
+                        alt={news.title}
+                        fill
                         loading={idx === 0 ? "eager" : "lazy"}
                         sizes="96px"
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -276,10 +276,10 @@ export function HeroSection() {
                       <div className="absolute inset-0 bg-secondary/50" />
                     )}
                   </div>
-                  
+
                   <div className="flex flex-col justify-center relative z-10">
                     {news.category && (
-                        <span className="text-[10px] font-bold text-accent mb-1 uppercase tracking-wider">{news.category.name}</span>
+                      <span className="text-[10px] font-bold text-accent mb-1 uppercase tracking-wider">{news.category.name}</span>
                     )}
                     <h3 className="font-serif font-bold text-foreground leading-snug mb-2 group-hover:text-accent transition-colors line-clamp-2">
                       {news.title}

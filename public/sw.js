@@ -1,85 +1,62 @@
+const CACHE_NAME = 'nu-lumbung-pwa-v1';
+
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installing...');
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activating...');
-  event.waitUntil(clients.claim());
-});
-
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-
-  // Handle navigation requests
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then(response => response)
-        .catch(() => {
-          // Return cached home page or a basic offline response
-          return caches.match('/').then(cachedResponse => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            // Return a basic offline HTML page
-            return new Response('Offline - Unable to load page', {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: new Headers({
-                'Content-Type': 'text/plain'
-              })
-            });
-          });
-        })
-    );
-    return;
-  }
-
-  // Handle requests that might fail due to CSP or network issues
-  event.respondWith(
-    caches.match(request)
-      .then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(request)
-          .then((response) => {
-            // Only cache successful responses
-            if (response && response.status === 200) {
-              const clonedResponse = response.clone();
-              if (caches) {
-                caches.open('dynamic-cache-v1').then((cache) => {
-                  cache.put(request, clonedResponse);
-                });
-              }
-              return response;
-            }
-            return response;
-          })
-          .catch((error) => {
-            // Log the error but don't throw
-            console.log('[Service Worker] Fetch error:', error);
-            // Return a proper Response object instead of null
-            return new Response(null, {
-              status: 503,
-              statusText: 'Service Unavailable'
-            });
-          });
-      })
-      .catch((error) => {
-        console.log('[Service Worker] Cache error:', error);
-        return new Response(null, {
-          status: 503,
-          statusText: 'Service Unavailable'
-        });
-      })
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      // Pre-cache core assets
+      return cache.addAll([
+        '/',
+        '/manifest.json',
+        '/icon-192x192.png',
+        '/icon-512x512.png',
+        '/favicon.ico'
+      ]);
+    }).then(() => self.skipWaiting())
   );
 });
 
-// Handle messages from clients
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  // Only cache GET requests
+  if (event.request.method !== 'GET') return;
+  // Ignore API requests and admin routes
+  if (event.request.url.includes('/api/') || event.request.url.includes('/admin/')) return;
+  // Ignore chrome-extension and next.js internal hot reload requests
+  if (!event.request.url.startsWith('http')) return;
+
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request).then((networkResponse) => {
+        // Cache dynamic responses dynamically if successful
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+          return networkResponse;
+        }
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
+        return networkResponse;
+      }).catch(() => {
+        // Fallback or offline page logic could go here
+        // For now, let it fail silently (browser will show its default offline dino) 
+        // Chrome just requires the fetch listener to exist for PWA installation criteria.
+      });
+    })
+  );
 });

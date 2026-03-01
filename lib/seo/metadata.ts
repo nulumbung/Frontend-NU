@@ -1,4 +1,4 @@
-import type { Metadata, ResolvingMetadata } from 'next';
+import type { Metadata } from 'next';
 import {
   DEFAULT_SITE_NAME,
   DEFAULT_SITE_DESCRIPTION,
@@ -98,8 +98,7 @@ export interface PageMetadataOptions {
 }
 
 export const createPageMetadata = (
-  options: PageMetadataOptions,
-  parentMetadata?: ResolvingMetadata
+  options: PageMetadataOptions
 ): Metadata => {
   const siteUrl = getSiteUrl();
   const title = options.title ? `${options.title} | ${DEFAULT_SITE_NAME}` : DEFAULT_SITE_NAME;
@@ -122,7 +121,7 @@ export const createPageMetadata = (
       nocache: false,
     },
     openGraph: {
-      type: (options.ogType || 'website') as any,
+      type: (options.ogType || 'website') as 'article' | 'website' | 'profile',
       locale: 'id_ID',
       url: canonical,
       siteName: DEFAULT_SITE_NAME,
@@ -236,13 +235,13 @@ export const createNewsArticleSchema = (
     dateModified: updatedDate,
     author: authorName
       ? {
-          '@type': 'Person',
-          name: authorName,
-        }
+        '@type': 'Person',
+        name: authorName,
+      }
       : {
-          '@type': 'Organization',
-          name: DEFAULT_SITE_NAME,
-        },
+        '@type': 'Organization',
+        name: DEFAULT_SITE_NAME,
+      },
     publisher: {
       '@type': 'Organization',
       name: DEFAULT_SITE_NAME,
@@ -279,13 +278,13 @@ export const createArticleSchema = (
     dateModified: updatedDate,
     author: authorName
       ? {
-          '@type': 'Person',
-          name: authorName,
-        }
+        '@type': 'Person',
+        name: authorName,
+      }
       : {
-          '@type': 'Organization',
-          name: DEFAULT_SITE_NAME,
-        },
+        '@type': 'Organization',
+        name: DEFAULT_SITE_NAME,
+      },
     publisher: {
       '@type': 'Organization',
       name: DEFAULT_SITE_NAME,
@@ -324,14 +323,14 @@ export const createEventSchema = (
     image: imageUrl,
     organizer: organizer
       ? {
-          '@type': 'Organization',
-          name: organizer,
-          url: getSiteUrl(),
-        }
+        '@type': 'Organization',
+        name: organizer,
+        url: getSiteUrl(),
+      }
       : {
-          '@type': 'Organization',
-          name: DEFAULT_SITE_NAME,
-          url: getSiteUrl(),
-        },
+        '@type': 'Organization',
+        name: DEFAULT_SITE_NAME,
+        url: getSiteUrl(),
+      },
   };
 };

@@ -80,6 +80,9 @@ export interface YouTubeVideoDetails {
   concurrentViewers?: string;
   actualStartTime?: string;
   scheduledStartTime?: string;
+  channel_name?: string;
+  youtube_id?: string;
+  view_count?: string | number;
 }
 
 export interface YouTubeChannelDetails {

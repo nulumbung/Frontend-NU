@@ -2,9 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { api } from '@/components/auth/auth-context';
+import { api, useAuth } from '@/components/auth/auth-context';
 import { useRouter, useParams } from 'next/navigation';
-import { ChevronLeft, Save, Loader2, User as UserIcon, Lock, Mail, Shield, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Save, Loader2, User as UserIcon, Lock, Mail, Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { ImageInput } from '@/components/form/image-input';
 
@@ -23,9 +23,12 @@ export default function EditUserPage() {
     name: '',
     email: '',
     password: '',
+    raw_password: '',
     role: 'user',
     avatar: ''
   });
+  const [showRawPassword, setShowRawPassword] = useState(false);
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -36,6 +39,7 @@ export default function EditUserPage() {
           name: data.name,
           email: data.email,
           password: '', // Don't fill password
+          raw_password: data.raw_password || '',
           role: data.role,
           avatar: data.avatar || ''
         });
@@ -49,22 +53,23 @@ export default function EditUserPage() {
     };
 
     if (params.id) {
-        fetchUser();
+      fetchUser();
     }
   }, [params.id, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    try {
-        const dataToSend: Partial<typeof formData> = { ...formData };
-        if (!dataToSend.password) {
-            delete dataToSend.password; // Don't send empty password
-        }
 
-        await api.put(`/users/${params.id}`, dataToSend);
-        router.push('/admin/users');
+    try {
+      const dataToSend: Partial<typeof formData> = { ...formData };
+      if (!dataToSend.password) {
+        delete dataToSend.password; // Don't send empty password
+      }
+      delete dataToSend.raw_password; // Never send back raw_password here
+
+      await api.put(`/users/${params.id}`, dataToSend);
+      router.push('/admin/users');
     } catch (error: unknown) {
       console.error('Failed to update user', error);
       alert('Failed to update user: ' + getErrorMessage(error));
@@ -74,7 +79,7 @@ export default function EditUserPage() {
   };
 
   if (isFetching) {
-      return <div className="text-center py-12">Loading...</div>;
+    return <div className="text-center py-12">Loading...</div>;
   }
 
   return (
@@ -88,99 +93,125 @@ export default function EditUserPage() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          
+
           <div className="flex flex-col sm:flex-row gap-6">
             <div className="flex-1 space-y-6">
-                {/* Name */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
-                    <div className="relative">
-                        <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input 
-                        type="text" 
-                        required
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                    </div>
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
                 </div>
+              </div>
 
-                {/* Email */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input 
-                        type="email" 
-                        required
-                        value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                    </div>
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
                 </div>
+              </div>
 
-                {/* Password */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Password Baru (Opsional)</label>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input 
-                        type="password" 
-                        value={formData.password}
-                        onChange={(e) => setFormData({...formData, password: e.target.value})}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                        placeholder="Kosongkan jika tidak ingin mengubah"
-                        minLength={8}
-                        />
-                    </div>
-                    {formData.password && (
-                         <div className="flex items-center gap-2 mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                            <AlertCircle className="w-3 h-3" />
-                            Password akan diubah saat disimpan.
-                         </div>
-                    )}
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password Baru (Opsional)</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Kosongkan jika tidak ingin mengubah"
+                    minLength={8}
+                  />
                 </div>
+                {formData.password && (
+                  <div className="flex items-center gap-2 mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                    <AlertCircle className="w-3 h-3" />
+                    Password akan diubah saat disimpan.
+                  </div>
+                )}
+              </div>
+
+              {/* Show Current Password (Superadmin Only) */}
+              {currentUser?.role === 'superadmin' && formData.raw_password && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password Saat Ini</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
+                    <input
+                      type={showRawPassword ? "text" : "password"}
+                      readOnly
+                      value={formData.raw_password}
+                      className="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 focus:outline-none cursor-default font-mono text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRawPassword(!showRawPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      {showRawPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                    Hanya Superadmin yang bisa melihat ini. User dapat login menggunakan password ini.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="w-full sm:w-1/3 space-y-6">
-                 {/* Avatar */}
-                 <div>
-                    <ImageInput
-                        label="Foto Profil"
-                        value={formData.avatar}
-                        onChange={(value) => setFormData({...formData, avatar: value})}
-                    />
-                </div>
+              {/* Avatar */}
+              <div>
+                <ImageInput
+                  label="Foto Profil"
+                  value={formData.avatar}
+                  onChange={(value) => setFormData({ ...formData, avatar: value })}
+                />
+              </div>
 
-                {/* Role */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Role / Peran</label>
-                    <div className="relative">
-                        <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <select 
-                            value={formData.role}
-                            onChange={(e) => setFormData({...formData, role: e.target.value})}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
-                        >
-                            <option value="user">User Biasa</option>
-                            <option value="redaksi">Redaksi (Berita)</option>
-                            <option value="editor">Editor (Konten)</option>
-                            <option value="admin">Admin (Pengelola)</option>
-                            <option value="superadmin">Super Admin (Full Akses)</option>
-                        </select>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-                        Pastikan peran sesuai dengan tanggung jawab pengguna.
-                    </p>
+              {/* Role */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Role / Peran</label>
+                <div className="relative">
+                  <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+                  >
+                    <option value="user">User Biasa</option>
+                    <option value="redaksi">Redaksi (Berita)</option>
+                    <option value="editor">Editor (Konten)</option>
+                    <option value="admin">Admin (Pengelola)</option>
+                    <option value="superadmin">Super Admin (Full Akses)</option>
+                  </select>
                 </div>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                  Pastikan peran sesuai dengan tanggung jawab pengguna.
+                </p>
+              </div>
             </div>
           </div>
 
           <div className="pt-6 border-t border-gray-100 flex justify-end">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isLoading}
               className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50"
             >

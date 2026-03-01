@@ -1,10 +1,6 @@
 import axios, { AxiosError, AxiosInstance } from 'axios';
 
-interface ApiError {
-  message: string;
-  status: number;
-  data?: unknown;
-}
+
 
 export class ApiService {
   private api: AxiosInstance;
