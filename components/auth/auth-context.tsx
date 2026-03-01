@@ -45,21 +45,17 @@ const DEVICE_FINGERPRINT_KEY = 'device_fingerprint';
 // In production: NEXT_PUBLIC_API_URL should be set to https://api.nulumbung.or.id/api
 // In development: falls back to http://localhost:8000/api
 const getApiBaseUrl = () => {
-  // Priority: Use full backend URL for direct API access (bypasses Next.js proxy limits)
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
   // If we are on the SERVER SIDE (Node.js SSR), we MUST use the absolute URL.
   // Relative URLs like '/api' will cause Axios Network Error because it lacks a host.
   if (typeof window === 'undefined') {
-    return backendUrl ? `${backendUrl.replace(/\/$/, '')}/api` : 'http://127.0.0.1:8000/api';
-  }
-
-  // If we are on the CLIENT SIDE, we should also prefer absolute to avoid proxy issues,
-  // but fallback to relative '/api' if NEXT_PUBLIC_BACKEND_URL is somehow missing.
-  if (backendUrl) {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
     return `${backendUrl.replace(/\/$/, '')}/api`;
   }
 
+  // If we are on the CLIENT SIDE, we ALWAYS use relative '/api'.
+  // This forces Axios to go through the Next.js rewrites in next.config.ts.
+  // This completely eliminates CORS errors because the browser thinks it's talking to the frontend server,
+  // and the frontend server securely proxies the request to the backend.
   return '/api';
 };
 
