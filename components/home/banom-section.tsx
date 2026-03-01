@@ -15,12 +15,18 @@ interface BanomItem {
   short_desc?: string | null;
 }
 
+export interface BanomData extends BanomItem { }
+
+interface BanomSectionProps {
+  initialData?: BanomData[];
+}
+
 const REFRESH_INTERVAL = 30000;
 const toArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
-export function BanomSection() {
-  const [banoms, setBanoms] = useState<BanomItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function BanomSection({ initialData }: BanomSectionProps) {
+  const [banoms, setBanoms] = useState<BanomItem[]>(initialData || []);
+  const [isLoading, setIsLoading] = useState(!initialData);
 
   useEffect(() => {
     const fetchBanoms = async () => {
@@ -95,7 +101,6 @@ export function BanomSection() {
                           alt={banom.name}
                           fill
                           className="object-contain filter drop-shadow-sm"
-                          unoptimized
                         />
                       ) : (
                         <div className="w-full h-full rounded-full bg-secondary/60 flex items-center justify-center text-sm font-serif text-muted-foreground">

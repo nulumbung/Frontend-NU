@@ -14,17 +14,23 @@ interface NewsItem {
   slug: string;
   image?: string | null;
   category: {
-      name: string;
+    name: string;
   } | null;
   created_at: string;
+}
+
+export interface LatestNewsData extends NewsItem { }
+
+interface LatestNewsSectionProps {
+  initialData?: LatestNewsData[];
 }
 
 const REFRESH_INTERVAL = 30000;
 const toArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
-export function LatestNewsSection() {
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function LatestNewsSection({ initialData }: LatestNewsSectionProps) {
+  const [news, setNews] = useState<NewsItem[]>(initialData || []);
+  const [isLoading, setIsLoading] = useState(!initialData);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -45,13 +51,13 @@ export function LatestNewsSection() {
   }, []);
 
   if (isLoading) {
-      return (
-        <section className="py-16 bg-gradient-to-b from-background via-surface to-background relative">
-            <div className="container mx-auto px-4 text-center">
-                <p>Loading berita terbaru...</p>
-            </div>
-        </section>
-      )
+    return (
+      <section className="py-16 bg-gradient-to-b from-background via-surface to-background relative">
+        <div className="container mx-auto px-4 text-center">
+          <p>Loading berita terbaru...</p>
+        </div>
+      </section>
+    )
   }
 
   if (news.length === 0) return null;
@@ -59,7 +65,7 @@ export function LatestNewsSection() {
   return (
     <section className="py-16 bg-gradient-to-b from-background via-surface to-background relative">
       <div className="container mx-auto px-4">
-        
+
         {/* Section Header */}
         <div className="flex items-center justify-between mb-12">
           <div className="flex items-center gap-4">
@@ -69,8 +75,8 @@ export function LatestNewsSection() {
               <span className="absolute -bottom-2 left-0 w-1/2 h-1 bg-accent/50 rounded-full blur-sm" />
             </h2>
           </div>
-          <Link 
-            href="/berita" 
+          <Link
+            href="/berita"
             className="flex items-center gap-2 text-accent font-bold hover:gap-4 transition-all group"
           >
             Lihat Semua <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -95,18 +101,17 @@ export function LatestNewsSection() {
                     alt={item.title}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    unoptimized
                   />
                 ) : (
                   <div className="absolute inset-0 bg-secondary/50" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-60 transition-opacity group-hover:opacity-40" />
-                
+
                 {/* Category Badge */}
                 {item.category && (
-                    <span className="absolute top-4 left-4 bg-accent text-accent-foreground px-3 py-1 rounded-full text-xs font-bold shadow-lg backdrop-blur-md">
+                  <span className="absolute top-4 left-4 bg-accent text-accent-foreground px-3 py-1 rounded-full text-xs font-bold shadow-lg backdrop-blur-md">
                     {item.category.name}
-                    </span>
+                  </span>
                 )}
               </div>
 
@@ -123,7 +128,7 @@ export function LatestNewsSection() {
                     </span>
                   </div>
                 </div>
-                
+
                 {/* Bottom Shine Effect */}
                 <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-gradient-to-r from-accent to-transparent transition-all duration-500 group-hover:w-full" />
               </div>

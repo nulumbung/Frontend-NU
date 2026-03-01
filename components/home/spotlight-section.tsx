@@ -23,15 +23,53 @@ interface PostItem {
   is_spotlight?: boolean;
 }
 
+export interface SpotlightData extends PostItem { }
+
+interface SpotlightSectionProps {
+  initialData?: SpotlightData[];
+}
+
 const colorPool = ['bg-green-600', 'bg-blue-600', 'bg-yellow-600', 'bg-rose-600', 'bg-teal-600'];
 const REFRESH_INTERVAL = 30000;
 const toArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
-export function SpotlightSection() {
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [activeTab, setActiveTab] = useState('');
-  const [newsByCategory, setNewsByCategory] = useState<Record<string, PostItem[]>>({});
-  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+function parseSpotlightData(rows: PostItem[]) {
+  const grouped: Record<string, PostItem[]> = {};
+  const categoryMap: Record<string, CategoryItem> = {};
+
+  rows.forEach((post) => {
+    const category = post.category;
+    if (!category?.slug) return;
+
+    if (!grouped[category.slug]) {
+      grouped[category.slug] = [];
+    }
+    if (grouped[category.slug].length < 3) {
+      grouped[category.slug].push(post);
+    }
+    if (!categoryMap[category.slug]) {
+      categoryMap[category.slug] = {
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+      };
+    }
+  });
+
+  const nextCategories = Object.values(categoryMap)
+    .filter((cat) => (grouped[cat.slug] || []).length > 0)
+    .slice(0, 5);
+
+  return { grouped, nextCategories };
+}
+
+export function SpotlightSection({ initialData }: SpotlightSectionProps) {
+  const initialParsed = useMemo(() => initialData ? parseSpotlightData(initialData) : null, [initialData]);
+
+  const [categories, setCategories] = useState<CategoryItem[]>(initialParsed?.nextCategories || []);
+  const [activeTab, setActiveTab] = useState(initialParsed?.nextCategories[0]?.slug || '');
+  const [newsByCategory, setNewsByCategory] = useState<Record<string, PostItem[]>>(initialParsed?.grouped || {});
+  const [isLoadingCategories, setIsLoadingCategories] = useState(!initialData);
 
   useEffect(() => {
     const fetchSpotlight = async () => {
@@ -39,31 +77,7 @@ export function SpotlightSection() {
         const response = await api.get('/posts/latest', { params: { spotlight: 1, limit: 30 } });
         const rows: PostItem[] = toArray<PostItem>(response.data);
 
-        const grouped: Record<string, PostItem[]> = {};
-        const categoryMap: Record<string, CategoryItem> = {};
-
-        rows.forEach((post) => {
-          const category = post.category;
-          if (!category?.slug) return;
-
-          if (!grouped[category.slug]) {
-            grouped[category.slug] = [];
-          }
-          if (grouped[category.slug].length < 3) {
-            grouped[category.slug].push(post);
-          }
-          if (!categoryMap[category.slug]) {
-            categoryMap[category.slug] = {
-              id: category.id,
-              name: category.name,
-              slug: category.slug,
-            };
-          }
-        });
-
-        const nextCategories = Object.values(categoryMap)
-          .filter((cat) => (grouped[cat.slug] || []).length > 0)
-          .slice(0, 5);
+        const { grouped, nextCategories } = parseSpotlightData(rows);
 
         setNewsByCategory(grouped);
         setCategories(nextCategories);
@@ -157,7 +171,6 @@ export function SpotlightSection() {
                       alt={news.title}
                       fill
                       className="object-cover transition-transform duration-700 group-hover:scale-110"
-                      unoptimized
                     />
                   ) : (
                     <div className="absolute inset-0 bg-secondary/60" />

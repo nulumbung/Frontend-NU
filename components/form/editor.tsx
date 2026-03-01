@@ -7,15 +7,15 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import { api } from '@/components/auth/auth-context';
-import { 
-  Bold, 
-  Italic, 
-  List, 
-  ListOrdered, 
-  Quote, 
-  Redo, 
-  Strikethrough, 
-  Undo, 
+import {
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Quote,
+  Redo,
+  Strikethrough,
+  Undo,
   Link as LinkIcon,
   Image as ImageIcon,
   Upload,
@@ -190,7 +190,7 @@ const MenuBar = ({ editor }: { editor: TiptapEditor | null }) => {
       >
         <Strikethrough className="w-4 h-4" />
       </button>
-      
+
       <div className="w-px h-6 bg-gray-300 mx-1 self-center" />
 
       <button
@@ -278,6 +278,39 @@ const MenuBar = ({ editor }: { editor: TiptapEditor | null }) => {
 };
 
 export const Editor = ({ value, onChange, className = '' }: EditorProps) => {
+  const [isUploadingGlobal, setIsUploadingGlobal] = useState(false);
+
+  const handleImageUpload = async (file: File, view: any, pos?: number) => {
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      alert(`Ukuran gambar maksimal ${MAX_IMAGE_SIZE_MB}MB.`);
+      return;
+    }
+
+    setIsUploadingGlobal(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await api.post('/upload', formData);
+      const imageUrl = response.data?.url;
+
+      if (!imageUrl) {
+        alert('URL gambar tidak ditemukan setelah upload.');
+        return;
+      }
+
+      const node = view.state.schema.nodes.image.create({
+        src: imageUrl,
+        alt: file.name || 'Gambar berita',
+      });
+      const transaction = view.state.tr.insert(pos ?? view.state.selection.to, node);
+      view.dispatch(transaction);
+    } catch (error) {
+      alert(`Gagal upload gambar: ${getUploadErrorMessage(error)}`);
+    } finally {
+      setIsUploadingGlobal(false);
+    }
+  };
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -292,6 +325,32 @@ export const Editor = ({ value, onChange, className = '' }: EditorProps) => {
       attributes: {
         class: 'prose prose-sm sm:prose-base focus:outline-none min-h-[150px] p-4',
       },
+      handlePaste: (view, event, slice) => {
+        const items = Array.from(event.clipboardData?.items || []);
+        const imageItem = items.find(item => item.type.startsWith('image/'));
+
+        if (imageItem) {
+          const file = imageItem.getAsFile();
+          if (file) {
+            event.preventDefault();
+            handleImageUpload(file, view);
+            return true;
+          }
+        }
+        return false;
+      },
+      handleDrop: (view, event, slice, moved) => {
+        if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+          const file = event.dataTransfer.files[0];
+          if (file.type.startsWith('image/')) {
+            event.preventDefault();
+            const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
+            handleImageUpload(file, view, coordinates?.pos);
+            return true;
+          }
+        }
+        return false;
+      }
     },
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
@@ -307,9 +366,17 @@ export const Editor = ({ value, onChange, className = '' }: EditorProps) => {
   }, [editor, value]);
 
   return (
-    <div className={`border border-gray-200 rounded-lg overflow-hidden bg-white ${className}`}>
+    <div className={`relative border border-gray-200 rounded-lg overflow-hidden bg-white ${className}`}>
       <MenuBar editor={editor} />
       <EditorContent editor={editor} />
+      {isUploadingGlobal && (
+        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10 backdrop-blur-[1px]">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex items-center gap-3">
+            <Loader2 className="w-5 h-5 animate-spin text-green-600" />
+            <span className="text-sm font-medium text-gray-700">Mengupload gambar...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -29,15 +29,26 @@ interface NewsItem {
   is_headline?: boolean;
 }
 
+export interface HeroData {
+  headline: NewsItem[];
+  featured: NewsItem[];
+  breaking: NewsItem[];
+  latest: NewsItem[];
+}
+
+interface HeroSectionProps {
+  initialData?: HeroData;
+}
+
 const REFRESH_INTERVAL = 60000; // Reduced from 30s to 60s
 const toArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
-export function HeroSection() {
-  const [headlineNews, setHeadlineNews] = useState<NewsItem[]>([]);
-  const [featuredNews, setFeaturedNews] = useState<NewsItem[]>([]);
-  const [breakingNews, setBreakingNews] = useState<NewsItem[]>([]);
-  const [latestNews, setLatestNews] = useState<NewsItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function HeroSection({ initialData }: HeroSectionProps) {
+  const [headlineNews, setHeadlineNews] = useState<NewsItem[]>(initialData?.headline || []);
+  const [featuredNews, setFeaturedNews] = useState<NewsItem[]>(initialData?.featured || []);
+  const [breakingNews, setBreakingNews] = useState<NewsItem[]>(initialData?.breaking || []);
+  const [latestNews, setLatestNews] = useState<NewsItem[]>(initialData?.latest || []);
+  const [isLoading, setIsLoading] = useState(!initialData);
 
   const fetchNews = useCallback(async () => {
     try {
